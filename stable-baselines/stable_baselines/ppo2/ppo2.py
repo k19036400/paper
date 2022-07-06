@@ -421,7 +421,7 @@ class PPO2(ActorCriticRLModel):
                                                                     cliprange_vf=cliprange_vf_now))
 
                 loss_vals = np.mean(mb_loss_vals, axis=0)
-                total_loss.append(loss_vals)
+                total_loss.append(np.sum(loss_vals.tolist()) / len(loss_vals.tolist()))
                 t_now = time.time()
                 fps = int(self.n_batch / (t_now - t_start))
 

@@ -372,7 +372,8 @@ class DeepSarsa:
             loss.backward()
             self.optimizer.step()
             self._init_batch()
-            return loss
+            loss_list = loss.tolist()
+            return int(loss_list)
 
     def save_data(self):
         return self.model.state_dict()
@@ -557,10 +558,13 @@ class VarianceModel:
                     chosen = action
 
             if prev_obs is not None:
+                sum_loss = []
                 for model, theory, reward in zip(self.models, self.theories, rewards):
                     loss = model.learn([prev_obs], [prev_a], [reward], [obs], [chosen], [done])
-                    total_loss.append(loss)
-
+                    if loss != None:
+                        sum_loss.append(loss)
+                if sum_loss != []:
+                    total_loss.append(np.sum(sum_loss) / len(sum_loss))
             prev_obs = obs
             prev_a = action
 
@@ -736,13 +740,12 @@ class FreeformVoter:
 
         self.model = model
         loss = model.learn(total_timesteps=num_timesteps, callback=self._save_model_every)
-        for lo in loss:
-            num = []
-            n = 0
-            for l in lo:
-                n += 1
-                num.append(n)
-            plt.plot(num, lo)
+        num = []
+        n = 0
+        for l in loss:
+            n += 1
+            num.append(n)
+        plt.plot(num, loss)
         if save_to is not None:
             model.save(self.save_folder + '/final_net')
             if os.path.exists(self.save_folder + 'loss.png') and os.path.exists(self.save_folder + 'loss.pdf'):
