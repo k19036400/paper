@@ -351,6 +351,7 @@ class PPO2(ActorCriticRLModel):
     def learn(self, total_timesteps, callback=None, log_interval=1, tb_log_name="PPO2",
               reset_num_timesteps=True):
         self.n_batch = self.n_envs * self.n_steps
+        total_loss = []
         # Transform to callable if needed
         self.learning_rate = get_schedule_fn(self.learning_rate)
         self.cliprange = get_schedule_fn(self.cliprange)
@@ -420,6 +421,7 @@ class PPO2(ActorCriticRLModel):
                                                                     cliprange_vf=cliprange_vf_now))
 
                 loss_vals = np.mean(mb_loss_vals, axis=0)
+                total_loss.append(loss_vals)
                 t_now = time.time()
                 fps = int(self.n_batch / (t_now - t_start))
 
@@ -451,7 +453,7 @@ class PPO2(ActorCriticRLModel):
                     if callback(locals(), globals()) is False:
                         break
 
-            return self
+            return total_loss
 
     def save(self, save_path, cloudpickle=False):
         data = {

@@ -286,12 +286,20 @@ class TabularSarsa:
 
     def learn(self, states, actions, rewards, next_states, next_actions, dones):
         # Q(s, a) = lr*(r + gamma Q(s', a')) + (1-lr)*Q(s, a)
+        total_loss = 0
+        num = 0
         for s, a, r, sp, ap, d in zip(states, actions, rewards, next_states, next_actions, dones):
             assert s is not None
+            source = self.table[s][a]
+            target = r + self.gamma * (self._get_table(sp)[ap] if not d else 0)
+            total_loss += (source - target)**2
+            num += 1
             self.table[s][a] = (
                     (1 - self.learning_rate) * self._get_table(s)[a] +
                     self.learning_rate * (r + self.gamma * (self._get_table(sp)[ap] if not d else 0))
             )
+        print (num)
+        return (total_loss / num)
 
     def save_data(self):
         return self.table
@@ -365,6 +373,8 @@ class DeepSarsa:
             loss.backward()
             self.optimizer.step()
             self._init_batch()
+            print loss
+            return loss
 
     def save_data(self):
         return self.model.state_dict()
@@ -533,7 +543,7 @@ class VarianceModel:
         done = False
 
         since_done = 0
-
+        total_loss = []
         for i in tqdm(range(total_timesteps)):
             chosen, _ = self.predict(obs, add=True)
             epsilon = self.get_epsilon(i)
@@ -550,7 +560,8 @@ class VarianceModel:
 
             if prev_obs is not None:
                 for model, theory, reward in zip(self.models, self.theories, rewards):
-                    model.learn([prev_obs], [prev_a], [reward], [obs], [chosen], [done])
+                    loss = model.learn([prev_obs], [prev_a], [reward], [obs], [chosen], [done])
+                    total_loss.append(loss)
 
             prev_obs = obs
             prev_a = action
@@ -567,6 +578,7 @@ class VarianceModel:
 
             if i % 20000 == 0 and hasattr(self.models[0], 'table'):
                 tqdm.write(f'{len(self.models[0].table)}')
+        return total_loss
 
     def save(self, path):
         data = ([v.save_data() for v in self.variances], [model.save_data() for model in self.models])
@@ -725,15 +737,25 @@ class FreeformVoter:
         pickle.dump(self.env_args, open(self.save_folder + '/args.pickle', 'wb'))
 
         self.model = model
-        model.learn(total_timesteps=num_timesteps, callback=self._save_model_every)
-
+        loss = model.learn(total_timesteps=num_timesteps, callback=self._save_model_every)
+        num = []
+        n = 0
+        for l in loss:
+            n += 1
+            num.append(n)
+        plt.plot(num, loss)
         if save_to is not None:
             model.save(self.save_folder + '/final_net')
+            if os.path.exists(self.save_folder + 'loss.png') and os.path.exists(self.save_folder + 'loss.pdf'):
+                pass
+            else:
+                plt.savefig(self.save_folder + 'loss.png')
+                plt.savefig(self.save_folder + 'loss.pdf')
 
     def test_trolley(self, load_from, n_credences=None, on_track_min=1, on_track_max=None,
                      n_on_track=None, sequence_number=0, filename='final_net', suffix_name=None):
         self.env_args = pickle.load(open(load_from + '/args.pickle', 'rb'))
-        for filename in ['final_net'] + [e.split('/')[-1] for e in glob.glob(load_from + '/00*')]:
+        for filename in ['final_net']:
             model, env_creator = self._get_trolley_model(is_testing=True)
             model = model.load(load_from + '/' + filename)
 
