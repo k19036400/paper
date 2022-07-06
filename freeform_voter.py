@@ -298,7 +298,6 @@ class TabularSarsa:
                     (1 - self.learning_rate) * self._get_table(s)[a] +
                     self.learning_rate * (r + self.gamma * (self._get_table(sp)[ap] if not d else 0))
             )
-        print (num)
         return (total_loss / num)
 
     def save_data(self):
@@ -373,7 +372,6 @@ class DeepSarsa:
             loss.backward()
             self.optimizer.step()
             self._init_batch()
-            print loss
             return loss
 
     def save_data(self):
@@ -738,12 +736,13 @@ class FreeformVoter:
 
         self.model = model
         loss = model.learn(total_timesteps=num_timesteps, callback=self._save_model_every)
-        num = []
-        n = 0
-        for l in loss:
-            n += 1
-            num.append(n)
-        plt.plot(num, loss)
+        for lo in loss:
+            num = []
+            n = 0
+            for l in lo:
+                n += 1
+                num.append(n)
+            plt.plot(num, lo)
         if save_to is not None:
             model.save(self.save_folder + '/final_net')
             if os.path.exists(self.save_folder + 'loss.png') and os.path.exists(self.save_folder + 'loss.pdf'):
