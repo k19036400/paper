@@ -40,16 +40,6 @@ def process_experiment(exp, cachedir, timesteps, n_on_track, n_credences):
         ])
 
     filename = get_img_filename(n_on_track, n_credences)
-    if not os.path.exists(f'{outdir}/{filename}.png'):
-        subprocess.run([
-            'python',
-            'freeform_voter.py',
-            'test_trolley',
-            '--load_from', outdir,
-            '--n_on_track', str(n_on_track),
-            '--n_credences', str(n_credences),
-            '--suffix_name', filename
-        ])
 
 def run(timesteps, n_on_track, n_credences, processes=1):
     suffix = f'ts-{timesteps}'
