@@ -204,6 +204,7 @@ class NashEnv:
         return np.array([list(obs) + [self.remaining_budgets[i]] + list(self.credences) + self.extra_obs[i] for i in range(len(self.theories))])
 
     def step(self, orig_actions, verbose=False):
+        print (self.credences)
         actions = copy.deepcopy(orig_actions)
         if self.stochastic_voting:
             actions = np.exp(actions)
@@ -515,6 +516,8 @@ class VarianceModel:
         return self._get_state(), rewards, done, mergedict(reward, info)
 
     def predict(self, obs, add=False, deterministic=False, verbose=False):
+        
+        print (self.credences)
         action_scores = np.array([model.predict([obs], deterministic)[0] for model in self.models])
         if add:
             for std, a in zip(self.variances, action_scores):
