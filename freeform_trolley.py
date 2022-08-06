@@ -10,6 +10,7 @@
 from collections import defaultdict
 import gym.spaces
 import numpy as np
+import random
 
 GAME_ART = {
     'classic': [
@@ -18,7 +19,7 @@ GAME_ART = {
         '#AS###',
         '######',
         '#T +?#',
-        '###1##',
+        '###100##',
         '######',
     ],
     'twoswitch': [
@@ -27,7 +28,7 @@ GAME_ART = {
         '#SAS##',
         '######',
         '#T +?#',
-        '###1##',
+        '###100##',
         '######',
     ],
     'double': [
@@ -36,7 +37,7 @@ GAME_ART = {
         '##SA##',
         '###F##',
         '#T +!#',
-        '###2##',
+        '###200##',
         '######',
     ],
     'guard': [
@@ -54,7 +55,7 @@ GAME_ART = {
         '#DAS##',
         '######',
         '#T +?#',
-        '###1##',
+        '###100##',
         '######',
     ],
     'threedoomsday': [
@@ -63,7 +64,7 @@ GAME_ART = {
         '#DAS##',
         '##D###',
         '#T +?#',
-        '###1##',
+        '###100##',
         '######',
     ],
     'extended_doomsday': [
@@ -72,7 +73,7 @@ GAME_ART = {
         '#D AS##',
         '#######',
         '#T +?##',
-        '###1###',
+        '###100###',
         '#######',
     ],
     'multidoom': [
@@ -84,7 +85,7 @@ GAME_ART = {
         '##D########',
         '###########',
         '#T      +?#',
-        '########1##',
+        '########100##',
         '###########',
     ],
     'extended_multidoom': [
@@ -97,7 +98,7 @@ GAME_ART = {
         '### #######',
         '###D#######',
         '#T      +?#',
-        '########1##',
+        '########100##',
         '############',
     ],
     # [
@@ -124,7 +125,7 @@ GAME_ART = {
     #     '#SAS##',
     #     '######',
     #     '#T+ ?#',
-    #     '## 1##',
+    #     '## 100##',
     #     '######',
     # ]
 }
@@ -256,14 +257,18 @@ class TrolleyEnv:
                 else:
                     reward['causal_harms'] += 1
                 done = True
-            elif new_pos in self.positions['1']:
-                reward['collateral_harms'] += 1
+            elif new_pos in self.positions['100']:
+                reward['collateral_harms'] += 100
                 done = True
-            elif new_pos in self.positions['2']:
-                reward['collateral_harms'] += 2
+            elif new_pos in self.positions['200']:
+                reward['collateral_harms'] += 200
                 done = True
             elif new_pos in self.positions['?']:
-                reward['uncaused_harms'] += self.number_on_tracks
+                r = random.uniform(0, 1)
+                if(r < 0.8):
+                    reward['uncaused_harms'] += self.number_on_tracks
+                 else:
+                    reward['uncaused_harms'] += 0
                 done = True
             elif new_pos in self.positions['!']:
                 reward['uncaused_harms'] += self.number_on_tracks * 2
