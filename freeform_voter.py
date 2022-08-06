@@ -707,7 +707,7 @@ class FreeformVoter:
         if prev_timesteps // self.env_args['checkpoint_timesteps'] != self.timesteps_so_far // self.env_args['checkpoint_timesteps'] and self.save_folder is not None:
             self.model.save(self.save_folder + f'/{self.timesteps_so_far:010}')
 
-    def train_trolley(self, level='classic', on_track=10, on_track_dist='oneto', voting='nash',
+    def train_trolley(self, level='classic', on_track=200, on_track_dist='oneto', voting='nash',
                       theories=({"pushed_harms":-4,"collateral_harms":-1, 'lies': -0.5, 'doomsday': -10},{"harms": -1, 'doomsday': -300}),
                       credences=None, nenvs=32, seed=-1, num_timesteps=50000000, stochastic_voting=False,
                       cost_exponent=1, sarsa_type='deep', credence_granularity=20, learn_with_explore=False,
