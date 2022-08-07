@@ -264,14 +264,11 @@ class TrolleyEnv:
                 reward['collateral_harms'] += 5
                 done = True
             elif new_pos in self.positions['?']:
-                r = random.uniform(0, 1)
-                if(r < 0.8):
-                    if self.number_on_tracks > 3:
-                        reward['uncaused_harms'] += (self.number_on_tracks - 3) ** 0.88 + 3
-                    else:
-                        reward['uncaused_harms'] += -1.55 * (-self.number_on_tracks + 3) ** 0.88 + 3
+                p = (0.8 ** 0.65) / (((0.8 ** 0.65) + (0.2 ** 0.65)) ** (1/0.65))
+                if self.number_on_tracks > 3:
+                    reward['uncaused_harms'] += p * ((self.number_on_tracks - 3) ** 0.88) + 3
                 else:
-                    reward['uncaused_harms'] += 1
+                    reward['uncaused_harms'] += p * (-2.25 * (-self.number_on_tracks + 3) ** 0.88) + 3
                 done = True
             elif new_pos in self.positions['!']:
                 reward['uncaused_harms'] += self.number_on_tracks * 2
