@@ -253,9 +253,9 @@ class TrolleyEnv:
             self.positions['T'][i] = new_pos
             if new_pos in self.positions['F']:
                 if self.pushed:
-                    reward['pushed_harms'] += 1
+                    reward['pushed_harms'] += 6
                 else:
-                    reward['causal_harms'] += 1
+                    reward['causal_harms'] += 3
                 done = True
             elif new_pos in self.positions['3']:
                 reward['collateral_harms'] += 3
@@ -266,9 +266,12 @@ class TrolleyEnv:
             elif new_pos in self.positions['?']:
                 r = random.uniform(0, 1)
                 if(r < 0.8):
-                    reward['uncaused_harms'] += self.number_on_tracks
+                    if self.number_on_tracks > 3:
+                        reward['uncaused_harms'] += (self.number_on_tracks - 3) ** 0.88 + 3
+                    else:
+                        reward['uncaused_harms'] += -1.55 * (-self.number_on_tracks + 3) ** 0.88 + 3
                 else:
-                    reward['uncaused_harms'] += 0
+                    reward['uncaused_harms'] += 1
                 done = True
             elif new_pos in self.positions['!']:
                 reward['uncaused_harms'] += self.number_on_tracks * 2
