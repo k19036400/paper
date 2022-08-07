@@ -224,6 +224,8 @@ class TrolleyEnv:
             'lies': 0,
             'doomsday': 0
         })
+        
+        prob = 0
 
         new_pos = self.add_pos(self.positions['A'], ACTIONS[a])
         if new_pos in self.positions['F']:
@@ -264,14 +266,21 @@ class TrolleyEnv:
                 reward['collateral_harms'] += 5
                 done = True
             elif new_pos in self.positions['?']:
-                p = (0.8 ** 0.65) / (((0.8 ** 0.65) + (0.2 ** 0.65)) ** (1/0.65))
-                if self.number_on_tracks > 3:
-                    reward['uncaused_harms'] += p * ((self.number_on_tracks - 3) ** 0.88) + 3
+                r = random.uniform(0, 1)
+                if(r < 0.8):
+                    reward['uncaused_harms'] += self.number_on_tracks
+                    prob += 1
                 else:
-                    reward['uncaused_harms'] += p * (-2.25 * (-self.number_on_tracks + 3) ** 0.88) + 3
+                    reward['uncaused_harms'] += 1
+                    prob += 2
+                #p = (0.8 ** 0.65) / (((0.8 ** 0.65) + (0.2 ** 0.65)) ** (1/0.65))
+                #if self.number_on_tracks > 3:
+                    #reward['uncaused_harms'] += p * ((self.number_on_tracks - 3) ** 0.88) + 3
+                #else:
+                    #reward['uncaused_harms'] += p * (-2.25 * (-self.number_on_tracks + 3) ** 0.88) + 3
                 done = True
             elif new_pos in self.positions['!']:
                 reward['uncaused_harms'] += self.number_on_tracks * 2
                 done = True
 
-        return self.obs(), reward, done
+        return self.obs(), reward, done, prob
