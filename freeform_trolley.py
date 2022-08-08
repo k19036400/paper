@@ -283,4 +283,4 @@ class TrolleyEnv:
                 reward['uncaused_harms'] += self.number_on_tracks * 2
                 done = True
 
-        return self.obs(), reward, done, prob
+        return self.obs(), reward, done, prob, self.number_on_tracks
