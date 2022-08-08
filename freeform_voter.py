@@ -258,7 +258,7 @@ class NashEnv:
             # TODO: handle random tie-breaking (?)
             chosen = np.argmax(votes)
 
-        obs, rewards, done, info, prob = self.env.step(chosen)
+        obs, rewards, done, info, prob, num_on_tracks = self.env.step(chosen)
         if prob != 0:
             if prob == 1:
                 self.probList['high'] += 1
