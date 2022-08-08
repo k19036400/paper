@@ -155,14 +155,25 @@ def possible_values_dist(distribution, argument):
     assert False
 
 
-def process_rewards(theory, rewards, probList = None):
+def process_rewards(theory, rewards, probList, p):
     print (rewards)
     total = 0
     for k in theory:
         found_at_least_one = False
         for k2 in rewards:
             if k in k2:
-                total += theory[k] * rewards[k2]
+                if k2 == rewards['uncaused_harms'] and probList != None and p != 0:
+                    if p == 1:
+                        probability = probList['high'] / (probList['high'] + probList['low'])
+                    else:
+                        probability = probList['low'] / (probList['high'] + probList['low'])
+                    subject_p = (probability ** 0.65) / (((probability ** 0.65) + ((1-probability) ** 0.65)) ** (1/0.65))
+                    if k2 > 5:
+                        total += theory[k] * ((subject_p * (rewards[k2] - 5)**0.88) + 5)
+                    else:
+                        total += theory[k] * ((subject_p * (-2.25 * (-rewards[k2] + 5)**0.88)) + 5)
+                else:
+                    total += theory[k] * rewards[k2]
                 found_at_least_one = True
         assert found_at_least_one
     return total
@@ -189,6 +200,7 @@ class NashEnv:
         self.recent_steps = deque(maxlen=100)
         self.default_budget = 10.0
         self.reset()
+        self.probList = {'high' : 0, 'low' : 0}
 
     def reset(self, credences=None, number_on_tracks=None):
         self.extra_obs = [[]] * len(self.theories)
@@ -233,14 +245,21 @@ class NashEnv:
             chosen = np.argmax(votes)
 
         obs, rewards, done, info, prob = self.env.step(chosen)
-
+        if prob != 0:
+            if prob == 1:
+                self.probList['high'] += 1
+            elif prob == 2:
+                self.probList['low'] += 1
+            res = np.array([process_rewards(theory, rewards, self.probList, prob) for theory in self.theories])
+        else:
+            res = np.array([process_rewards(theory, rewards, None, prob) for theory in self.theories])
         self.cur_steps += 1
         if done:
             self.recent_steps.append(self.cur_steps)
 
         return (
             np.array([list(obs) + [self.remaining_budgets[i]] + list(self.credences) + self.extra_obs[i] for i in range(len(self.theories))]),
-            np.array([process_rewards(theory, rewards) for theory in self.theories]),
+            res,
             done,
             mergedict(rewards, info)
         )
@@ -509,9 +528,9 @@ class VarianceModel:
                     self.probList['high'] += 1
                 else:
                     self.probList['low'] += 1
-                rewards.append(process_rewards(t, reward, self.probList))
+                rewards.append(process_rewards(t, reward, self.probList, prob))
             else:
-                rewards.append(process_rewards(t, reward))
+                rewards.append(process_rewards(t, reward, None, prob))
         return self._get_state(), rewards, done, mergedict(reward, info)
 
     def predict(self, obs, add=False, deterministic=False, verbose=False):
