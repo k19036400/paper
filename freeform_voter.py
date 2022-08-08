@@ -155,23 +155,37 @@ def possible_values_dist(distribution, argument):
     assert False
 
 
-def process_rewards(theory, rewards, probList, p):
-    print (rewards)
+def process_rewards(theory, rewards, probList, p, num_on_tracks):
     total = 0
     for k in theory:
         found_at_least_one = False
         for k2 in rewards:
             if k in k2:
-                if k2 == rewards['uncaused_harms'] and probList != None and p != 0:
+                if rewards[k2] == rewards['uncaused_harms'] and probList != None and p != 0:
+                    probability = probList['high'] / (probList['high'] + probList['low'])
+                    subject_p1 = (probability ** 0.65) / (((probability ** 0.65) + ((1-probability) ** 0.65)) ** (1/0.65))
+                    subject_p2 = ((1-probability) ** 0.65) / ((((1-probability) ** 0.65) + (probability ** 0.65)) ** (1/0.65))
                     if p == 1:
-                        probability = probList['high'] / (probList['high'] + probList['low'])
+                        high_value = rewards[k2]
+                        low_value = 1
                     else:
-                        probability = probList['low'] / (probList['high'] + probList['low'])
-                    subject_p = (probability ** 0.65) / (((probability ** 0.65) + ((1-probability) ** 0.65)) ** (1/0.65))
-                    if k2 > 5:
-                        total += theory[k] * ((subject_p * (rewards[k2] - 5)**0.88) + 5)
+                        low_value = rewards[k2]
+                        high_value = num_on_tracks
+                    total1 = theory[k] * ((subject_p2 * (low_value - 5)**0.88) + 5)
+                    if num_on_tracks > 5:
+                        total2 = theory[k] * ((subject_p1 * (high_value - 5)**0.88) + 5)
                     else:
-                        total += theory[k] * ((subject_p * (-2.25 * (-rewards[k2] + 5)**0.88)) + 5)
+                        total2 = theory[k] * ((subject_p1 * (-2.25 * (-high_value + 5)**0.88)) + 5)
+                    total += (total1 + total2)
+                    #if p == 1:
+                        #probability = probList['high'] / (probList['high'] + probList['low'])
+                    #else:
+                        #probability = probList['low'] / (probList['high'] + probList['low'])
+                    #subject_p = (probability ** 0.65) / (((probability ** 0.65) + ((1-probability) ** 0.65)) ** (1/0.65))
+                    #if rewards[k2] > 5:
+                        #total += theory[k] * ((subject_p * (rewards[k2] - 5)**0.88) + 5)
+                    #else:
+                        #total += theory[k] * ((subject_p * (-2.25 * (-rewards[k2] + 5)**0.88)) + 5)
                 else:
                     total += theory[k] * rewards[k2]
                 found_at_least_one = True
@@ -250,9 +264,9 @@ class NashEnv:
                 self.probList['high'] += 1
             elif prob == 2:
                 self.probList['low'] += 1
-            res = np.array([process_rewards(theory, rewards, self.probList, prob) for theory in self.theories])
+            res = np.array([process_rewards(theory, rewards, self.probList, prob, num_on_tracks) for theory in self.theories])
         else:
-            res = np.array([process_rewards(theory, rewards, None, prob) for theory in self.theories])
+            res = np.array([process_rewards(theory, rewards, None, prob, num_on_tracks) for theory in self.theories])
         self.cur_steps += 1
         if done:
             self.recent_steps.append(self.cur_steps)
@@ -520,7 +534,7 @@ class VarianceModel:
         return None
 
     def step(self, action):
-        self.raw_obs, reward, done, info, prob = self.env.step(action)
+        self.raw_obs, reward, done, info, prob, num_on_tracks = self.env.step(action)
         rewards = []
         for t in self.theories:
             if prob != 0:
@@ -528,9 +542,9 @@ class VarianceModel:
                     self.probList['high'] += 1
                 else:
                     self.probList['low'] += 1
-                rewards.append(process_rewards(t, reward, self.probList, prob))
+                rewards.append(process_rewards(t, reward, self.probList, prob, num_on_tracks))
             else:
-                rewards.append(process_rewards(t, reward, None, prob))
+                rewards.append(process_rewards(t, reward, None, prob, num_on_tracks))
         return self._get_state(), rewards, done, mergedict(reward, info)
 
     def predict(self, obs, add=False, deterministic=False, verbose=False):
@@ -622,7 +636,7 @@ class SequentialEnv:
         return [self.remaining] + list(self.env.reset(*args, **kwargs))
 
     def step(self, *args, **kwargs):
-        s, r, d, prob = self.env.step(*args, **kwargs)
+        s, r, d, prob, num_on_tracks = self.env.step(*args, **kwargs)
         info = {'subenv_done': d}
         if d:
             self.remaining -= 1
@@ -630,7 +644,7 @@ class SequentialEnv:
                 d = False
                 # TODO: what to do about the environment args and kwargs here?
                 s = self.env.reset()
-        return [self.remaining] + list(s), r, d, info, prob
+        return [self.remaining] + list(s), r, d, info, prob, num_on_tracks
 
 
 class LRHalver:
