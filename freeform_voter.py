@@ -155,7 +155,8 @@ def possible_values_dist(distribution, argument):
     assert False
 
 
-def process_rewards(theory, rewards):
+def process_rewards(theory, rewards, probList = None):
+    print (rewards)
     total = 0
     for k in theory:
         found_at_least_one = False
@@ -231,7 +232,7 @@ class NashEnv:
             # TODO: handle random tie-breaking (?)
             chosen = np.argmax(votes)
 
-        obs, rewards, done, info = self.env.step(chosen)
+        obs, rewards, done, info, prob = self.env.step(chosen)
 
         self.cur_steps += 1
         if done:
@@ -473,6 +474,7 @@ class VarianceModel:
         self.learn_with_explore = learn_with_explore
         self.credence_round = credence_round
         self.stochastic = stochastic
+        self.probList = {'high' : 0, 'low' : 0}
         if model_type == 'tabular':
             self.models = [TabularSarsa(env.action_space.n, lr, 1.0) for _ in theories]
         elif 'deep' in model_type:
@@ -499,10 +501,17 @@ class VarianceModel:
         return None
 
     def step(self, action):
-        self.raw_obs, reward, done, info = self.env.step(action)
+        self.raw_obs, reward, done, info, prob = self.env.step(action)
         rewards = []
         for t in self.theories:
-            rewards.append(process_rewards(t, reward))
+            if prob != 0:
+                if prob == 1:
+                    self.probList['high'] += 1
+                else:
+                    self.probList['low'] += 1
+                rewards.append(process_rewards(t, reward, self.probList))
+            else:
+                rewards.append(process_rewards(t, reward))
         return self._get_state(), rewards, done, mergedict(reward, info)
 
     def predict(self, obs, add=False, deterministic=False, verbose=False):
@@ -594,7 +603,7 @@ class SequentialEnv:
         return [self.remaining] + list(self.env.reset(*args, **kwargs))
 
     def step(self, *args, **kwargs):
-        s, r, d = self.env.step(*args, **kwargs)
+        s, r, d, prob = self.env.step(*args, **kwargs)
         info = {'subenv_done': d}
         if d:
             self.remaining -= 1
@@ -602,7 +611,7 @@ class SequentialEnv:
                 d = False
                 # TODO: what to do about the environment args and kwargs here?
                 s = self.env.reset()
-        return [self.remaining] + list(s), r, d, info
+        return [self.remaining] + list(s), r, d, info, prob
 
 
 class LRHalver:
@@ -785,7 +794,7 @@ class FreeformVoter:
                 total_doomsday = 0
                 while not done:
                     action, _states = model.predict(obs, deterministic=True)
-                    obs, rewards, done, info = env.step(action)
+                    obs, rewards, done, info, prob = env.step(action)
                     if cur_sequence == sequence_number:
                         total_uncaused += info['uncaused_harms']
                         total_lies += info['lies']
@@ -931,7 +940,7 @@ class FreeformVoter:
             max_possible += np.max(obs[:, :self.env_args['n_actions']], axis=1)
             episode_data['obs'].append(obs)
             episode_data['actions'].append(action)
-            obs, rewards, done, info = env.step(action)
+            obs, rewards, done, info, prob = env.step(action)
             episode_data['rewards'].append(rewards)
             episode_data['done'].append(done)
             total += rewards
