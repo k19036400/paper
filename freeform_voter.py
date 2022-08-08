@@ -794,7 +794,7 @@ class FreeformVoter:
                 total_doomsday = 0
                 while not done:
                     action, _states = model.predict(obs, deterministic=True)
-                    obs, rewards, done, info, prob = env.step(action)
+                    obs, rewards, done, info = env.step(action)
                     if cur_sequence == sequence_number:
                         total_uncaused += info['uncaused_harms']
                         total_lies += info['lies']
