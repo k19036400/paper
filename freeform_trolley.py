@@ -19,7 +19,7 @@ GAME_ART = {
         '#AS###',
         '######',
         '#T +?#',
-        '###3##',
+        '###5##',
         '######',
     ],
     'twoswitch': [
@@ -28,7 +28,7 @@ GAME_ART = {
         '#SAS##',
         '######',
         '#T +?#',
-        '###3##',
+        '###5##',
         '######',
     ],
     'double': [
@@ -37,7 +37,7 @@ GAME_ART = {
         '##SA##',
         '###F##',
         '#T +!#',
-        '###5##',
+        '###7##',
         '######',
     ],
     'guard': [
@@ -55,7 +55,7 @@ GAME_ART = {
         '#DAS##',
         '######',
         '#T +?#',
-        '###3##',
+        '###5##',
         '######',
     ],
     'threedoomsday': [
@@ -64,7 +64,7 @@ GAME_ART = {
         '#DAS##',
         '##D###',
         '#T +?#',
-        '###3##',
+        '###5##',
         '######',
     ],
     'extended_doomsday': [
@@ -73,7 +73,7 @@ GAME_ART = {
         '#D AS##',
         '#######',
         '#T +?##',
-        '###5###',
+        '###7###',
         '#######',
     ],
     'multidoom': [
@@ -85,7 +85,7 @@ GAME_ART = {
         '##D########',
         '###########',
         '#T      +?#',
-        '########3##',
+        '########5##',
         '###########',
     ],
     'extended_multidoom': [
@@ -98,7 +98,7 @@ GAME_ART = {
         '### #######',
         '###D#######',
         '#T      +?#',
-        '########3##',
+        '########5##',
         '############',
     ],
     # [
@@ -130,9 +130,9 @@ GAME_ART = {
     # ]
 }
 
-UNMOVING = '!35?S+^ G#'
+UNMOVING = '!57?S+^ G#'
 
-Z_ORDER = ' !?S+^35FTDGA#'
+Z_ORDER = ' !?S+^57FTDGA#'
 
 ACTIONS = [
     (1, 0),
@@ -255,29 +255,29 @@ class TrolleyEnv:
             self.positions['T'][i] = new_pos
             if new_pos in self.positions['F']:
                 if self.pushed:
-                    reward['pushed_harms'] += 6
+                    reward['pushed_harms'] += 1
                 else:
-                    reward['causal_harms'] += 3
-                done = True
-            elif new_pos in self.positions['3']:
-                reward['collateral_harms'] += 3
+                    reward['causal_harms'] += 1
                 done = True
             elif new_pos in self.positions['5']:
                 reward['collateral_harms'] += 5
                 done = True
+            elif new_pos in self.positions['7']:
+                reward['collateral_harms'] += 7
+                done = True
             elif new_pos in self.positions['?']:
-                r = random.uniform(0, 1)
-                if(r < 0.8):
-                    reward['uncaused_harms'] += self.number_on_tracks
-                    prob += 1
-                else:
-                    reward['uncaused_harms'] += 1
-                    prob += 2
-                #p = (0.8 ** 0.65) / (((0.8 ** 0.65) + (0.2 ** 0.65)) ** (1/0.65))
-                #if self.number_on_tracks > 3:
-                    #reward['uncaused_harms'] += p * ((self.number_on_tracks - 3) ** 0.88) + 3
+                #r = random.uniform(0, 1)
+                #if(r < 0.8):
+                    #reward['uncaused_harms'] += self.number_on_tracks
+                    #prob += 1
                 #else:
-                    #reward['uncaused_harms'] += p * (-2.25 * (-self.number_on_tracks + 3) ** 0.88) + 3
+                    #reward['uncaused_harms'] += 1
+                    #prob += 2
+                p = (0.8 ** 0.65) / (((0.8 ** 0.65) + (0.2 ** 0.65)) ** (1/0.65))
+                if self.number_on_tracks > 5:
+                    reward['uncaused_harms'] += p * ((self.number_on_tracks - 5) ** 0.88) + 5
+                else:
+                    reward['uncaused_harms'] += p * (-2.25 * (-self.number_on_tracks + 5) ** 0.88) + 5
                 done = True
             elif new_pos in self.positions['!']:
                 reward['uncaused_harms'] += self.number_on_tracks * 2
