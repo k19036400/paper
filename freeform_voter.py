@@ -734,7 +734,7 @@ class FreeformVoter:
         if prev_timesteps // self.env_args['checkpoint_timesteps'] != self.timesteps_so_far // self.env_args['checkpoint_timesteps'] and self.save_folder is not None:
             self.model.save(self.save_folder + f'/{self.timesteps_so_far:010}')
 
-    def train_trolley(self, level='classic', on_track=15, on_track_dist='oneto', voting='nash',
+    def train_trolley(self, level='classic', on_track=30, on_track_dist='oneto', voting='nash',
                       theories=({"pushed_harms":-4,"collateral_harms":-1, 'lies': -0.5, 'doomsday': -10},{"harms": -1, 'doomsday': -300}),
                       credences=None, nenvs=32, seed=-1, num_timesteps=50000000, stochastic_voting=False,
                       cost_exponent=1, sarsa_type='deep', credence_granularity=20, learn_with_explore=False,
@@ -878,7 +878,7 @@ class FreeformVoter:
             res = min(divs, key=lambda i: abs(v // i - 7))
             # print('OMG', res, [(i, abs(v // i - 7)) for i in divs])
             return v // res
-        show_ticks(plt.yticks, 0, len(outcome_pic) - 1, on_track_list[0], on_track_list[-1], good_div(on_track_list[-1] - on_track_list[0]), lambda x: f'{x:.0f}', reverse=True)
+        show_ticks(plt.yticks, 0, len(outcome_pic) - 1, on_track_list[0], on_track_list[-1], 10, lambda x: f'{x:.0f}', reverse=True)
         plt.xlabel('Credence in deontology')
         plt.ylabel('Number on tracks (X)')
         plt.tight_layout(rect=[0, 0.03, 1, 0.95])
