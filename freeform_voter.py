@@ -164,7 +164,7 @@ def process_rewards(theory, rewards, probList, p, num_on_tracks):
                 if rewards[k2] == rewards['uncaused_harms'] and probList != None and p != 0:
                     probability = probList['high'] / (probList['high'] + probList['low'])
                     subject_p1 = (probability ** 0.65) / (((probability ** 0.65) + ((1-probability) ** 0.65)) ** (1/0.65))
-                    subject_p2 = ((1-probability) ** 0.65) / ((((1-probability) ** 0.65) + (probability ** 0.65)) ** (1/0.65))
+                    subject_p2 = (1 - subject_p1)
                     if p == 1:
                         high_value = rewards[k2]
                         low_value = 1
@@ -172,10 +172,10 @@ def process_rewards(theory, rewards, probList, p, num_on_tracks):
                         low_value = rewards[k2]
                         high_value = num_on_tracks
                     total1 = theory[k] * ((subject_p2 * ((low_value - 5)**0.88).real) + 5)
-                    if num_on_tracks > 5:
-                        total2 = theory[k] * ((subject_p1 * ((high_value - 5)**0.88).real) + 5)
+                    if num_on_tracks < 5:
+                        total2 = theory[k] * (((1 - subject_p1) * (-((5 - high_value)**0.88)).real) + 5)
                     else:
-                        total2 = theory[k] * ((subject_p1 * (-2.25 * (((-high_value + 5)**0.88).real))) + 5)
+                        total2 = theory[k] * ((subject_p1 * (2.25 * (((high_value - 5)**0.88).real))) + 5)
                     total += (total1 + total2)
                     #if p == 1:
                         #probability = probList['high'] / (probList['high'] + probList['low'])
