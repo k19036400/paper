@@ -275,7 +275,7 @@ class TrolleyEnv:
                     #prob += 2
                 p = (0.9 ** 0.65) / (((0.9 ** 0.65) + (0.1 ** 0.65)) ** (1/0.65))
                 if self.number_on_tracks < 5:
-                    reward['uncaused_harms'] += p * (-((-self.number_on_tracks + 5) ** 0.88)) + 5
+                    reward['uncaused_harms'] += (1 - p) * (-((-self.number_on_tracks + 5) ** 0.88)) + 5
                 else:
                     reward['uncaused_harms'] += p * (2.25 * ((self.number_on_tracks - 5) ** 0.88)) + 5
                 done = True
