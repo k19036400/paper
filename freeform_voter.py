@@ -155,39 +155,13 @@ def possible_values_dist(distribution, argument):
     assert False
 
 
-def process_rewards(theory, rewards, probList, p, num_on_tracks):
+def process_rewards(theory, rewards):
     total = 0
     for k in theory:
         found_at_least_one = False
         for k2 in rewards:
             if k in k2:
-                if rewards[k2] == rewards['uncaused_harms'] and probList != None and p != 0:
-                    probability = probList['high'] / (probList['high'] + probList['low'])
-                    subject_p1 = (probability ** 0.65) / (((probability ** 0.65) + ((1-probability) ** 0.65)) ** (1/0.65))
-                    subject_p2 = (1 - subject_p1)
-                    if p == 1:
-                        high_value = rewards[k2]
-                        low_value = 1
-                    else:
-                        low_value = rewards[k2]
-                        high_value = num_on_tracks
-                    total1 = theory[k] * ((subject_p2 * ((low_value - 5)**0.88).real) + 5)
-                    if num_on_tracks < 5:
-                        total2 = theory[k] * (((1 - subject_p1) * (-((5 - high_value)**0.88)).real) + 5)
-                    else:
-                        total2 = theory[k] * ((subject_p1 * (2.25 * (((high_value - 5)**0.88).real))) + 5)
-                    total += (total1 + total2)
-                    #if p == 1:
-                        #probability = probList['high'] / (probList['high'] + probList['low'])
-                    #else:
-                        #probability = probList['low'] / (probList['high'] + probList['low'])
-                    #subject_p = (probability ** 0.65) / (((probability ** 0.65) + ((1-probability) ** 0.65)) ** (1/0.65))
-                    #if rewards[k2] > 5:
-                        #total += theory[k] * ((subject_p * (rewards[k2] - 5)**0.88) + 5)
-                    #else:
-                        #total += theory[k] * ((subject_p * (-2.25 * (-rewards[k2] + 5)**0.88)) + 5)
-                else:
-                    total += theory[k] * rewards[k2]
+                total += theory[k] * rewards[k2]
                 found_at_least_one = True
         assert found_at_least_one
     return total
@@ -214,7 +188,6 @@ class NashEnv:
         self.recent_steps = deque(maxlen=100)
         self.default_budget = 10.0
         self.reset()
-        self.probList = {'high' : 0, 'low' : 0}
 
     def reset(self, credences=None, number_on_tracks=None):
         self.extra_obs = [[]] * len(self.theories)
@@ -258,22 +231,15 @@ class NashEnv:
             # TODO: handle random tie-breaking (?)
             chosen = np.argmax(votes)
 
-        obs, rewards, done, info, prob, num_on_tracks = self.env.step(chosen)
-        if prob != 0:
-            if prob == 1:
-                self.probList['high'] += 1
-            elif prob == 2:
-                self.probList['low'] += 1
-            res = np.array([process_rewards(theory, rewards, self.probList, prob, num_on_tracks) for theory in self.theories])
-        else:
-            res = np.array([process_rewards(theory, rewards, None, prob, num_on_tracks) for theory in self.theories])
+        obs, rewards, done, info = self.env.step(chosen)
+
         self.cur_steps += 1
         if done:
             self.recent_steps.append(self.cur_steps)
 
         return (
             np.array([list(obs) + [self.remaining_budgets[i]] + list(self.credences) + self.extra_obs[i] for i in range(len(self.theories))]),
-            res,
+            np.array([process_rewards(theory, rewards) for theory in self.theories]),
             done,
             mergedict(rewards, info)
         )
@@ -507,7 +473,6 @@ class VarianceModel:
         self.learn_with_explore = learn_with_explore
         self.credence_round = credence_round
         self.stochastic = stochastic
-        self.probList = {'high' : 0, 'low' : 0}
         if model_type == 'tabular':
             self.models = [TabularSarsa(env.action_space.n, lr, 1.0) for _ in theories]
         elif 'deep' in model_type:
@@ -534,17 +499,10 @@ class VarianceModel:
         return None
 
     def step(self, action):
-        self.raw_obs, reward, done, info, prob, num_on_tracks = self.env.step(action)
+        self.raw_obs, reward, done, info = self.env.step(action)
         rewards = []
         for t in self.theories:
-            if prob != 0:
-                if prob == 1:
-                    self.probList['high'] += 1
-                else:
-                    self.probList['low'] += 1
-                rewards.append(process_rewards(t, reward, self.probList, prob, num_on_tracks))
-            else:
-                rewards.append(process_rewards(t, reward, None, prob, num_on_tracks))
+            rewards.append(process_rewards(t, reward))
         return self._get_state(), rewards, done, mergedict(reward, info)
 
     def predict(self, obs, add=False, deterministic=False, verbose=False):
@@ -636,7 +594,7 @@ class SequentialEnv:
         return [self.remaining] + list(self.env.reset(*args, **kwargs))
 
     def step(self, *args, **kwargs):
-        s, r, d, prob, num_on_tracks = self.env.step(*args, **kwargs)
+        s, r, d = self.env.step(*args, **kwargs)
         info = {'subenv_done': d}
         if d:
             self.remaining -= 1
@@ -644,7 +602,7 @@ class SequentialEnv:
                 d = False
                 # TODO: what to do about the environment args and kwargs here?
                 s = self.env.reset()
-        return [self.remaining] + list(s), r, d, info, prob, num_on_tracks
+        return [self.remaining] + list(s), r, d, info
 
 
 class LRHalver:
@@ -677,9 +635,9 @@ class FreeformVoter:
                 # arr = np.array(np.random.rand(len(theories)))
                 # probs = arr / arr.sum()
                 a = np.random.rand()
-                probs = np.array([a, 1 - a])
-                if self.env_args['variance_type'] == 'tabular' or self.env_args['sarsa_type'] == 'tabular':
-                    probs = np.round(probs * self.env_args['credence_granularity']) / self.env_args['credence_granularity']
+                probs = np.array([0.25,0.25,0.25,0.25])
+                #if self.env_args['variance_type'] == 'tabular' or self.env_args['sarsa_type'] == 'tabular':
+                    #probs = np.round(probs * self.env_args['credence_granularity']) / self.env_args['credence_granularity']
                 return probs
             credences = _get_cred
         trolley = lambda: SequentialEnv(
@@ -734,8 +692,8 @@ class FreeformVoter:
         if prev_timesteps // self.env_args['checkpoint_timesteps'] != self.timesteps_so_far // self.env_args['checkpoint_timesteps'] and self.save_folder is not None:
             self.model.save(self.save_folder + f'/{self.timesteps_so_far:010}')
 
-    def train_trolley(self, level='classic', on_track=30, on_track_dist='oneto', voting='nash',
-                      theories=({"pushed_harms":-4,"collateral_harms":-1, 'lies': -0.5, 'doomsday': -10},{"harms": -1, 'doomsday': -300}),
+    def train_trolley(self, level='classic', on_track=10, on_track_dist='oneto', voting='nash',
+                      theories=({"causal_harms":-1},{"uncaused_harms": -1},{"self":-1},{"high-mindedness": -1}),
                       credences=None, nenvs=32, seed=-1, num_timesteps=50000000, stochastic_voting=False,
                       cost_exponent=1, sarsa_type='deep', credence_granularity=20, learn_with_explore=False,
                       sarsa_eps=0.1, learning_rate=0.001, variance_window=None, sarsa_batch_size=32, save_to='results',
@@ -775,7 +733,7 @@ class FreeformVoter:
     def test_trolley(self, load_from, n_credences=None, on_track_min=1, on_track_max=None,
                      n_on_track=None, sequence_number=0, filename='final_net', suffix_name=None):
         self.env_args = pickle.load(open(load_from + '/args.pickle', 'rb'))
-        for filename in ['final_net']:
+        for filename in ['final_net'] + [e.split('/')[-1] for e in glob.glob(load_from + '/00*')]:
             model, env_creator = self._get_trolley_model(is_testing=True)
             model = model.load(load_from + '/' + filename)
 
@@ -820,42 +778,46 @@ class FreeformVoter:
                 cur_sequence = 0
                 total = np.zeros(2 if self.env_args.get('rand_adv') else len(self.env_args['theories']))
                 done = False
-                total_uncaused = 0
-                total_pushed = 0
-                total_collateral = 0
-                total_lies = 0
-                total_doomsday = 0
+                cat = 0
+                portrait = 0
+                nothing = 0
+                lie = 0
+                torture = 0
+                right = 0
                 while not done:
                     action, _states = model.predict(obs, deterministic=True)
                     obs, rewards, done, info = env.step(action)
                     if cur_sequence == sequence_number:
-                        total_uncaused += info['uncaused_harms']
-                        total_lies += info['lies']
-                        total_pushed += info['pushed_harms']
-                        total_collateral += info['collateral_harms']
-                        total_doomsday += info['doomsday']
+                        cat += info['cat']
+                        portrait += info['portrait']
+                        nothing += info['nothing']
+                        lie += info['lie']
+                        torture += info['torture']
+                        right += info['right']
                     cur_sequence += info['subenv_done']
                     total += rewards
-                outcome_map['value'].append(total_uncaused > 0)
-                outcome_map['Deontology Credence'].append(cred / granularity)
-                outcome_map['# On Track'].append(cur_on_track)
-                if total_doomsday > 0:
-                    code = 4
-                elif total_lies > 0 and total_uncaused > 0:
-                    code = 3
-                elif total_uncaused > 0:
+                #outcome_map['value'].append(total_uncaused > 0)
+                #outcome_map['Deontology Credence'].append(cred / granularity)
+                #outcome_map['# On Track'].append(cur_on_track)
+                if cat > 0:
                     code = 0
-                elif total_collateral > 0:
+                elif portrait > 0:
                     code = 1
-                elif total_pushed > 0:
+                elif nothing > 0:
                     code = 2
+                elif lie > 0:
+                    code = 3
+                elif torture > 0:
+                    code = 4
+                elif right > 0:
+                    code = 5
                 else:
                     assert False
                 possible_values.add(code)
                 outcome_pic[-1].append(colors[code])
 
         outcome_pic = np.array(outcome_pic)[::-1]
-        labels = ['Nothing', 'Switch', 'Push', 'Lie Only', 'Doomsday']
+        labels = ['Cat', 'Portrait', 'Nothing', 'Lie', 'Torture', 'Right']
         patches = [mpatches.Patch(color=np.array(colors[i]) / 255, label=labels[i]) for i in range(len(labels)) if i in possible_values]
         # put those patched as legend-handles into the legend
         plt.legend(handles=patches)
@@ -878,7 +840,7 @@ class FreeformVoter:
             res = min(divs, key=lambda i: abs(v // i - 7))
             # print('OMG', res, [(i, abs(v // i - 7)) for i in divs])
             return v // res
-        show_ticks(plt.yticks, 0, len(outcome_pic) - 1, on_track_list[0], on_track_list[-1], 10, lambda x: f'{x:.0f}', reverse=True)
+        show_ticks(plt.yticks, 0, len(outcome_pic) - 1, on_track_list[0], on_track_list[-1], good_div(on_track_list[-1] - on_track_list[0]), lambda x: f'{x:.0f}', reverse=True)
         plt.xlabel('Credence in deontology')
         plt.ylabel('Number on tracks (X)')
         plt.tight_layout(rect=[0, 0.03, 1, 0.95])
@@ -973,7 +935,7 @@ class FreeformVoter:
             max_possible += np.max(obs[:, :self.env_args['n_actions']], axis=1)
             episode_data['obs'].append(obs)
             episode_data['actions'].append(action)
-            obs, rewards, done, info, prob = env.step(action)
+            obs, rewards, done, info = env.step(action)
             episode_data['rewards'].append(rewards)
             episode_data['done'].append(done)
             total += rewards

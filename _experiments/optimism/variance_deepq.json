@@ -1,5 +1,0 @@
-{
-  "level": "guard",
-  "voting": "variance",
-  "sarsa_type": "deepq"
-}

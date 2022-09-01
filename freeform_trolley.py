@@ -10,129 +10,54 @@
 from collections import defaultdict
 import gym.spaces
 import numpy as np
-import random
 
 GAME_ART = {
-    'classic': [
+    'trolley': [
         '######',
+        '#N####',
+        '#AR###',
         '######',
-        '#AS###',
-        '######',
-        '#T +?#',
-        '###5##',
-        '######',
-    ],
-    'twoswitch': [
-        '######',
-        '######',
-        '#SAS##',
-        '######',
-        '#T +?#',
-        '###5##',
+        '#T@1##',
+        '##?###',
         '######',
     ],
-    'double': [
+    'bomber': [
         '######',
+        '##N###',
+        '##AT##',
         '######',
-        '##SA##',
-        '###F##',
-        '#T +!#',
-        '###7##',
+        '#T@E##',
+        '##0###',
         '######',
     ],
-    'guard': [
+    'lie': [
+        '######',
+        '###G##',
+        '###AL#',
+        '######',
+        '#T@?##',
+        '##0###',
+        '######',
+    ],
+    'gallery': [
         '#######',
+        '###G###',
+        '##CAP##',
         '#######',
-        '###AG##',
-        '####F##',
-        '#T   ?#',
-        '#######',
+        '###C###',
+        '##T@N##',
+        '###P###',
         '#######'
-    ],
-    'doomsday': [
-        '######',
-        '######',
-        '#DAS##',
-        '######',
-        '#T +?#',
-        '###5##',
-        '######',
-    ],
-    'threedoomsday': [
-        '######',
-        '##D###',
-        '#DAS##',
-        '##D###',
-        '#T +?#',
-        '###5##',
-        '######',
-    ],
-    'extended_doomsday': [
-        '#######',
-        '#######',
-        '#D AS##',
-        '#######',
-        '#T +?##',
-        '###7###',
-        '#######',
-    ],
-    'multidoom': [
-        '###########',
-        '###D#######',
-        '#DA #######',
-        '### #######',
-        '#S  D######',
-        '##D########',
-        '###########',
-        '#T      +?#',
-        '########5##',
-        '###########',
-    ],
-    'extended_multidoom': [
-        '###########',
-        '####D######',
-        '#### ######',
-        '#D A ######',
-        '#### ######',
-        '##S   D####',
-        '### #######',
-        '###D#######',
-        '#T      +?#',
-        '########5##',
-        '############',
-    ],
-    # [
-    #     '######',
-    #     '######',
-    #     '###A##',
-    #     '###F##',
-    #     '#T  ?#',
-    #     '######',
-    #     '######'
-    # ],
-    # [
-    #     '######',
-    #     '######',
-    #     '#AS###',
-    #     '######',
-    #     '#T+ ?#',
-    #     '## F^#',
-    #     '######',
-    # ],
-    # [
-    #     '######',
-    #     '######',
-    #     '#SAS##',
-    #     '######',
-    #     '#T+ ?#',
-    #     '## 100##',
-    #     '######',
-    # ]
+    ]
 }
 
-UNMOVING = '!57?S+^ G#'
+UNMOVING = '#@1?0'
 
-Z_ORDER = ' !?S+^57FTDGA#'
+Z_ORDER = '#@1?TACPNLTREG0'
+
+down_order = 'PLTR'
+right_order = 'NG'
+up_order = 'C'
 
 ACTIONS = [
     (1, 0),
@@ -211,76 +136,84 @@ class TrolleyEnv:
     def add_pos(self, pos, inc):
         return (pos[0] + inc[0], pos[1] + inc[1])
 
-    def switch_on(self):
-        return self.positions['A'] in self.positions['S']
-
     def step(self, a):
         done = False
         reward = SumDict({
-            'collateral_harms': 0,
             'causal_harms': 0,
-            'pushed_harms': 0,
             'uncaused_harms': 0,
             'lies': 0,
-            'doomsday': 0
+            'torture': 0,
+            'self' : 0,
+            'high-mindedness' : 0,
+            'cat' : 0,
+            'portrait' : 0,
+            'right' : 0,
+            'nothing' : 0
         })
-        
-        prob = 0
 
         new_pos = self.add_pos(self.positions['A'], ACTIONS[a])
-        if new_pos in self.positions['F']:
-            fat_idx = self.positions['F'].index(new_pos)
-            fat_new_pos = self.add_pos(self.positions['F'][fat_idx], ACTIONS[a])
-            if fat_new_pos in self.positions[' '] or fat_new_pos in self.positions['+']:
-                self.positions['F'][fat_idx] = fat_new_pos
-                self.positions['A'] = new_pos
-                self.pushed = True
-        elif new_pos not in self.positions['#']:
+        if new_pos not in self.positions['#']:
             self.positions['A'] = new_pos
-            if new_pos in self.positions['G']:
+            if new_pos in self.positions['T']:
+                reward['causal_harms'] += 1
+                reward['uncaused_harms'] += 0.5
+                reward['high-mindedness'] += 1
+                reward['torture'] += 1
+            if new_pos in self.positions['L']:
+                reward['self'] += 1
+                reward['causal_harms'] += 1
+                reward['uncaused_harms'] += 1
                 reward['lies'] += 1
-            if new_pos in self.positions['D']:
-                reward['doomsday'] += 1
+            if new_pos in self.positions['G']:
+                reward['high-mindedness'] += 1
+                reward['nothing'] += 1
+            if new_pos in self.positions['N']:
+                reward['nothing'] += 1
+            if new_pos in self.positions['R']:
+                reward['high-mindedness'] += 1
+                reward['causal_harms'] += 1
+                reward['right'] += 1
+            if new_pos in self.positions['C']:
+                reward['self'] += 1
+                reward['causal_harms'] += 1
+                reward['cat'] += 1
+            if new_pos in self.positions['P']:
+                reward['self'] += 1
+                reward['causal_harms'] += 1
+                reward['portrait'] += 1
                 done = True
 
         for i, cur_pos in enumerate(self.positions['T']):
             direction = (0, 1)
-            if cur_pos in self.positions['+'] and self.switch_on():
+            if cur_pos in self.positions['@'] and self.positions['A'] in down_order:
                 direction = (1, 0)
-            elif cur_pos in self.positions['^']:
+            elif cur_pos in self.positions['@'] and self.positions['A'] in up_order:
                 direction = (-1, 0)
+            elif cur_pos in self.positions['@'] and self.positions['A'] in right_order:
+                direction = (0, 1)
             new_pos = self.add_pos(cur_pos, direction)
             if new_pos in self.positions['#']:
                 continue
             self.positions['T'][i] = new_pos
-            if new_pos in self.positions['F']:
-                if self.pushed:
-                    reward['pushed_harms'] += 1
-                else:
-                    reward['causal_harms'] += 1
-                done = True
-            elif new_pos in self.positions['5']:
-                reward['collateral_harms'] += 5
-                done = True
-            elif new_pos in self.positions['7']:
-                reward['collateral_harms'] += 7
+            if new_pos in self.positions['1']:
+                reward['uncaused_harms'] += self.number_on_tracks
+                reward['self'] += 1
                 done = True
             elif new_pos in self.positions['?']:
-                #r = random.uniform(0, 1)
-                #if(r < 0.8):
-                    #reward['uncaused_harms'] += self.number_on_tracks
-                    #prob += 1
-                #else:
-                    #reward['uncaused_harms'] += 1
-                    #prob += 2
-                p = (0.9 ** 0.65) / (((0.9 ** 0.65) + (0.1 ** 0.65)) ** (1/0.65))
-                if self.number_on_tracks < 5:
-                    reward['uncaused_harms'] += (1 - p) * (-((-self.number_on_tracks + 5) ** 0.88)) + 5
-                else:
-                    reward['uncaused_harms'] += p * (2.25 * ((self.number_on_tracks - 5) ** 0.88)) + 5
+                reward['uncaused_harms'] += self.number_on_tracks
                 done = True
-            elif new_pos in self.positions['!']:
-                reward['uncaused_harms'] += self.number_on_tracks * 2
+            elif new_pos in self.positions['E']:
+                reward['uncaused_harms'] += self.number_on_tracks
+                reward['self'] += 1
+                done = True
+            elif new_pos in self.positions['N']:
+                reward['uncaused_harms'] += (self.number_on_tracks + 1)
+                done = True
+            elif new_pos in self.positions['C']:
+                reward['uncaused_harms'] += self.number_on_tracks
+                done = True
+            elif new_pos in self.positions['P']:
+                reward['uncaused_harms'] += 1
                 done = True
 
-        return self.obs(), reward, done, prob, self.number_on_tracks
+        return self.obs(), reward, done
