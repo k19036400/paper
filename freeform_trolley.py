@@ -17,8 +17,8 @@ GAME_ART = {
         '#N####',
         '#AR###',
         '######',
-        '#T@1##',
-        '##?###',
+        '#T +1#',
+        '###?##',
         '######',
     ],
     'bomber': [
@@ -26,8 +26,8 @@ GAME_ART = {
         '##N###',
         '##AT##',
         '######',
-        '#T@E##',
-        '##0###',
+        '#T +E#',
+        '###0##',
         '######',
     ],
     'lie': [
@@ -35,8 +35,8 @@ GAME_ART = {
         '###G##',
         '###AL#',
         '######',
-        '#T@?##',
-        '##0###',
+        '#T +?#',
+        '###0##',
         '######',
     ],
     'gallery': [
@@ -45,19 +45,16 @@ GAME_ART = {
         '##CAP##',
         '#######',
         '###C###',
-        '##T@N##',
+        '#T +N##',
         '###P###',
         '#######'
     ]
 }
 
-UNMOVING = '#@1?0'
+UNMOVING = ' +1?0#'
 
-Z_ORDER = '#@1?TACPNLTREG0'
+Z_ORDER = ' +1?TACPNLTREG0#'
 
-down_order = 'PLTR'
-right_order = 'NG'
-up_order = 'C'
 
 ACTIONS = [
     (1, 0),
@@ -107,6 +104,9 @@ class TrolleyEnv:
 
         assert len(self.positions['A']) == 1
         self.positions['A'] = self.positions['A'][0]
+        self.down = [self.positions['P'], self.positions['L'], self.positions['T'], self.positions['R']]
+        self.right = [self.positions['N'], self.positions['G']]
+        self.up = [self.positions['C']]
         for c in UNMOVING:
             self.positions[c] = set(self.positions[c])
         return self.obs()
@@ -185,11 +185,11 @@ class TrolleyEnv:
 
         for i, cur_pos in enumerate(self.positions['T']):
             direction = (0, 1)
-            if cur_pos in self.positions['@'] and self.positions['A'] in down_order:
+            if cur_pos in self.positions['+'] and self.positions['A'] in self.down:
                 direction = (1, 0)
-            elif cur_pos in self.positions['@'] and self.positions['A'] in up_order:
+            elif cur_pos in self.positions['+'] and self.positions['A'] in self.up:
                 direction = (-1, 0)
-            elif cur_pos in self.positions['@'] and self.positions['A'] in right_order:
+            elif cur_pos in self.positions['+'] and self.positions['A'] in self.right:
                 direction = (0, 1)
             new_pos = self.add_pos(cur_pos, direction)
             if new_pos in self.positions['#']:
