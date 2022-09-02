@@ -733,7 +733,7 @@ class FreeformVoter:
     def test_trolley(self, load_from, n_credences=None, on_track_min=1, on_track_max=None,
                      n_on_track=None, sequence_number=0, filename='final_net', suffix_name=None):
         self.env_args = pickle.load(open(load_from + '/args.pickle', 'rb'))
-        for filename in ['final_net'] + [e.split('/')[-1] for e in glob.glob(load_from + '/00*')]:
+        for filename in ['final_net']:
             model, env_creator = self._get_trolley_model(is_testing=True)
             model = model.load(load_from + '/' + filename)
 
