@@ -104,7 +104,7 @@ class TrolleyEnv:
 
         assert len(self.positions['A']) == 1
         self.positions['A'] = self.positions['A'][0]
-        self.down = [self.positions['P'], self.positions['L'], self.positions['T'], self.positions['R']]
+        self.down = [self.positions['P'], self.positions['L'], self.positions['T'], self.positions['R'], self.positions['H']]
         self.right = [self.positions['N'], self.positions['G']]
         self.up = [self.positions['C']]
         for c in UNMOVING:
@@ -186,6 +186,25 @@ class TrolleyEnv:
                 reward['causal_harms'] += 1
                 reward['portrait'] += 1
             else:
+                print (self.level)
+                print (a)
+                print (new_pos)
+        elif(new_pos not in self.positions['#']) and (moved == True):
+          if new_pos in self.positions['H']:
+              reward['torture'] += 1
+          elif new_pos in self.positions['L']:
+              reward['lies'] += 1
+          elif new_pos in self.positions['G']:
+              reward['nothing'] += 1
+          elif new_pos in self.positions['N']:
+              reward['nothing'] += 1
+          elif new_pos in self.positions['R']:
+              reward['right'] += 1
+          elif new_pos in self.positions['C']:
+              reward['cat'] += 1
+          elif new_pos in self.positions['P']:
+              reward['portrait'] += 1
+          else:
               print (self.level)
               print (a)
               print (new_pos)
