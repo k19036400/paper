@@ -796,9 +796,9 @@ class FreeformVoter:
                         right += info['right']
                     cur_sequence += info['subenv_done']
                     total += rewards
-                outcome_map['value'].append(total_uncaused > 0)
-                outcome_map['Deontology Credence'].append(cred / granularity)
-                outcome_map['# On Track'].append(cur_on_track)
+                #outcome_map['value'].append(total_uncaused > 0)
+                #outcome_map['Deontology Credence'].append(cred / granularity)
+                #outcome_map['# On Track'].append(cur_on_track)
                 if cat > 0:
                     code = 0
                 elif portrait > 0:
