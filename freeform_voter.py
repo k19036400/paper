@@ -635,7 +635,7 @@ class FreeformVoter:
                 # arr = np.array(np.random.rand(len(theories)))
                 # probs = arr / arr.sum()
                 a = np.random.rand()
-                probs = np.array([0.25,0.25,0.25,0.25])
+                probs = np.array([0.5,0.5])
                 #if self.env_args['variance_type'] == 'tabular' or self.env_args['sarsa_type'] == 'tabular':
                     #probs = np.round(probs * self.env_args['credence_granularity']) / self.env_args['credence_granularity']
                 return probs
@@ -693,7 +693,7 @@ class FreeformVoter:
             self.model.save(self.save_folder + f'/{self.timesteps_so_far:010}')
 
     def train_trolley(self, level='classic', on_track=10, on_track_dist='oneto', voting='nash',
-                      theories=({"causal_harms":-1},{"uncaused_harms": -1},{"self":-1},{"high-mindedness": -1}),
+                      theories=({"causal_harms":-1},{"uncaused_harms": -1}),
                       credences=None, nenvs=32, seed=-1, num_timesteps=50000000, stochastic_voting=False,
                       cost_exponent=1, sarsa_type='deep', credence_granularity=20, learn_with_explore=False,
                       sarsa_eps=0.1, learning_rate=0.001, variance_window=None, sarsa_batch_size=32, save_to='results',
@@ -764,7 +764,7 @@ class FreeformVoter:
         env = env_creator()
         outcome_map = {'value': [], 'Deontology Credence': [], '# On Track': []}
         outcome_pic = []
-        colors = [[0x87, 0xAF, 0xFF], [0xFF, 0x8F, 0x49], [0xC0, 0xFF, 0x80], [0xA0, 0x00, 0xA0], [0, 0, 0]]
+        colors = [[0xC1, 0xFF, 0xC1], [0xBC, 0xEE, 0x68], [0x00, 0xCD, 0xCD], [0x76, 0xEE, 0xC6], [0xEE, 0xDF, 0xCC], [0xEE, 0xC5, 0x91], [0xB2, 0x3A, 0xEE]]
         possible_values = set()
         for cur_on_track in tqdm(on_track_list):
             outcome_pic.append([])
@@ -791,14 +791,14 @@ class FreeformVoter:
                         cat += info['cat']
                         portrait += info['portrait']
                         nothing += info['nothing']
-                        lie += info['lie']
+                        lie += info['lies']
                         torture += info['torture']
                         right += info['right']
                     cur_sequence += info['subenv_done']
                     total += rewards
-                #outcome_map['value'].append(total_uncaused > 0)
-                #outcome_map['Deontology Credence'].append(cred / granularity)
-                #outcome_map['# On Track'].append(cur_on_track)
+                outcome_map['value'].append(total_uncaused > 0)
+                outcome_map['Deontology Credence'].append(cred / granularity)
+                outcome_map['# On Track'].append(cur_on_track)
                 if cat > 0:
                     code = 0
                 elif portrait > 0:
@@ -812,12 +812,13 @@ class FreeformVoter:
                 elif right > 0:
                     code = 5
                 else:
-                    assert False
+                    #assert False
+                    code = 6
                 possible_values.add(code)
                 outcome_pic[-1].append(colors[code])
 
         outcome_pic = np.array(outcome_pic)[::-1]
-        labels = ['Cat', 'Portrait', 'Nothing', 'Lie', 'Torture', 'Right']
+        labels = ['Cat', 'Portrait', 'Nothing', 'Lie', 'Torture', 'Right', "?"]
         patches = [mpatches.Patch(color=np.array(colors[i]) / 255, label=labels[i]) for i in range(len(labels)) if i in possible_values]
         # put those patched as legend-handles into the legend
         plt.legend(handles=patches)
