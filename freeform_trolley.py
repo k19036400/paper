@@ -27,7 +27,7 @@ GAME_ART = {
         '##AH##',
         '######',
         '###TE#',
-        '###1##',
+        '###0##',
         '######',
     ],
     'lie': [
@@ -36,7 +36,7 @@ GAME_ART = {
         '###AL#',
         '######',
         '###T?#',
-        '###1##',
+        '###0##',
         '######',
     ],
     'gallery': [
@@ -88,13 +88,8 @@ class TrolleyEnv:
         self.observation_space = gym.spaces.Box(0, 100, (len(obs),), np.float32)
 
     def get_available_actions(self):
-        list = [0, 1, 2, 3]
-        result_actions = []
-        for i in list:
-          if (self.add_pos(self.positions['A'], ACTIONS[i]) not in self.positions['#']):
-            result_actions.append(i)
         # TODO: do something in which it is possible to only get actions that do different things.
-        return result_actions
+        return [0, 1, 2, 3]
 
     def reset(self, number_on_tracks=None):
         self.number_on_tracks = self.number_on_tracks_fn() if number_on_tracks is None else number_on_tracks
@@ -217,13 +212,15 @@ class TrolleyEnv:
                 reward['self'] += 1
                 done = True
             elif new_pos in self.positions['N']:
-                reward['uncaused_harms'] += (self.number_on_tracks + 1)
+                reward['uncaused_harms'] += (self.number_on_tracks + 3)
                 done = True
             elif new_pos in self.positions['H']:
-                reward['uncaused_harms'] += (self.number_on_tracks / 2)
+                reward['uncaused_harms'] += self.number_on_tracks
                 done = True
             elif new_pos in self.positions['K']:
-                reward['uncaused_harms'] += 1
+                reward['uncaused_harms'] += 3
+                done = True
+            elif new_pos in self.positions['0']:
                 done = True
         done = True
 
