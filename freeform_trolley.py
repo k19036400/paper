@@ -197,7 +197,7 @@ class TrolleyEnv:
                 reward['left'] += 1
             elif new_pos in self.positions['R']:
                 reward['right'] += 1
-            self.position['A'] = self.del_pos(self.positions['A'], ACTIONS[a])
+            self.positions['A'] = self.del_pos(self.positions['A'], ACTIONS[a])
 
         if self.level == "gallery":
             for i, cur_pos in enumerate(self.positions['T']):
