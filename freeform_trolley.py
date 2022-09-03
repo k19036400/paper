@@ -254,7 +254,7 @@ class TrolleyEnv:
                     if new_pos not in self.positions['#']:
                         self.positions['T'][i] = new_pos
                     if self.positions['T'][i] in self.positions['E']:
-                        reward['uncaused_harms'] += self.number_on_tracks
+                        reward['uncaused_harms'] += 5
                         reward['self'] += 1
                     elif self.positions['T'][i] in self.positions['0']:
                         pass
@@ -270,18 +270,18 @@ class TrolleyEnv:
                     if new_pos not in self.positions['#']:
                         self.positions['T'][i] = new_pos
                     if self.positions['T'][i] in self.positions['?']:
-                        reward['uncaused_harms'] += self.number_on_tracks
+                        reward['uncaused_harms'] += 5
                     elif self.positions['T'][i] in self.positions['0']:
                         pass
                     else:
                         print ("This shouldn't occur")
             else:
                 if self.cat == True:
-                    reward['uncaused_harms'] += self.number_on_tracks
+                    reward['uncaused_harms'] += 5
                 elif self.portrait == True:
                     reward['uncaused_harms'] += 3
                 else:
-                    reward['uncaused_harms'] += (self.number_on_tracks + 3)
+                    reward['uncaused_harms'] += 8
 
 
         return self.obs(), reward, done
