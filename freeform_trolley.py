@@ -161,41 +161,41 @@ class TrolleyEnv:
             'right' : 0,
             'nothing' : 0
         })
-        new_pos = self.add_pos(self.positions['A'], ACTIONS[a])
-        if new_pos not in self.positions['#']:
-            self.positions['A'] = new_pos
-            if new_pos in self.positions['H']:
+        new_agent = self.add_pos(self.positions['A'], ACTIONS[a])
+        if new_agent not in self.positions['#']:
+            self.positions['A'] = new_agent
+            if new_agent in self.positions['H']:
                 reward['causal_harms'] += 1
                 reward['uncaused_harms'] += 0.5
                 reward['high-mindedness'] += 1
                 reward['torture'] += 1
                 self.out -= 5
-            if new_pos in self.positions['X']:
+            if new_agent in self.positions['X']:
                 reward['trial'] += 1
                 self.out -= 1
-            elif new_pos in self.positions['L']:
+            elif new_agent in self.positions['L']:
                 reward['self'] += 1
                 reward['causal_harms'] += 1
                 reward['uncaused_harms'] += 1
                 reward['lies'] += 1
                 self.out += 10
-            elif new_pos in self.positions['Y']:
+            elif new_agent in self.positions['Y']:
                 reward['self'] += 0.5
                 reward['emphasis'] += 1
                 self.out += 1
-            elif new_pos in self.positions['G']:
+            elif new_agent in self.positions['G']:
                 reward['high-mindedness'] += 1
                 reward['nothing'] += 1
-            elif new_pos in self.positions['N']:
+            elif new_agent in self.positions['N']:
                 reward['nothing'] += 1
                 self.out += 1
-            elif new_pos in self.positions['U']:
+            elif new_agent in self.positions['U']:
                 reward['up'] += 1
-            elif new_pos in self.positions['D']:
+            elif new_agent in self.positions['D']:
                 reward['down'] += 1
-            elif new_pos in self.positions['Z']:
+            elif new_agent in self.positions['Z']:
                 reward['left'] += 1
-            elif new_pos in self.positions['R']:
+            elif new_agent in self.positions['R']:
                 reward['right'] += 1
         elif self.level == "bomber":
             reward['nothing'] += 1
@@ -217,6 +217,7 @@ class TrolleyEnv:
                 elif self.positions['A'] in self.positions['Z']:
                     direction = (0, -1)
                 new_pos = self.add_pos(cur_pos, direction)
+                print (new_agent)
                 if new_pos not in self.positions['#']:
                     self.positions['T'][i] = new_pos
                 if new_pos in self.positions['@']:
@@ -240,9 +241,11 @@ class TrolleyEnv:
                     self.out -= 1
                 if self.out <= 0:
                     done = True
-        if self.positions['A'] not in self.positions['#']:
+        if new_agent not in self.positions['#']:
             self.positions['A'] = self.del_pos(self.positions['A'], ACTIONS[a])
-
+        if self.level == 'gallery'
+            print (self.positions['A'])
+            
         if done == True:
             if self.level == 'bomber':
                 if self.out <= 0:
