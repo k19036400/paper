@@ -12,19 +12,10 @@ import gym.spaces
 import numpy as np
 
 GAME_ART = {
-    'trolley': [
-        '######',
-        '#N####',
-        '#AR###',
-        '######',
-        '###T1#',
-        '###?##',
-        '######',
-    ],
     'bomber': [
         '######',
         '##N###',
-        '##AH##',
+        '#XAH##',
         '######',
         '###TE#',
         '###0##',
@@ -33,7 +24,7 @@ GAME_ART = {
     'lie': [
         '######',
         '###G##',
-        '###AL#',
+        '##YAL#',
         '######',
         '###T?#',
         '###0##',
@@ -41,19 +32,22 @@ GAME_ART = {
     ],
     'gallery': [
         '#######',
-        '###G###',
-        '##CAP##',
+        '###U###',
+        '##ZAR##',
+        '###D###',
         '#######',
-        '###H###',
-        '###TN##',
-        '###K###',
+        '#H   K#',
+        '### ###',
+        '### ###',
+        '###T###',
+        '###@###',
         '#######'
     ]
 }
 
-UNMOVING = ' 1?0#'
+UNMOVING = ' @1?0#'
 
-Z_ORDER = ' 1?TACPNLTREG0HK#'
+Z_ORDER = ' @1?NXAHTEGYLUDZRHK0#'
 
 
 ACTIONS = [
@@ -83,6 +77,10 @@ class TrolleyEnv:
     def __init__(self, number_on_tracks_fn, level=0):
         self.level = level
         self.number_on_tracks_fn = number_on_tracks_fn
+        self.time = number_on_tracks_fn
+        self.cat = False
+        self.portrait = False
+        self.out = 10
         obs = self.reset()
         self.action_space = gym.spaces.Discrete(len(self.get_available_actions()))
         self.observation_space = gym.spaces.Box(0, 100, (len(obs),), np.float32)
@@ -93,7 +91,11 @@ class TrolleyEnv:
 
     def reset(self, number_on_tracks=None):
         self.number_on_tracks = self.number_on_tracks_fn() if number_on_tracks is None else number_on_tracks
+        self.time = self.number_on_tracks
         self.pushed = False
+        self.cat = False
+        self.portrait = False
+        self.out = 10
         cur_map = GAME_ART[self.level]
         self.map_size = (len(cur_map), len(cur_map[0]))
         self.positions = defaultdict(list)
@@ -104,9 +106,6 @@ class TrolleyEnv:
 
         assert len(self.positions['A']) == 1
         self.positions['A'] = self.positions['A'][0]
-        self.down = [self.positions['P'], self.positions['L'], self.positions['R'], self.positions['H']]
-        self.right = [self.positions['N'], self.positions['G']]
-        self.up = [self.positions['C']]
         for c in UNMOVING:
             self.positions[c] = set(self.positions[c])
         return self.obs()
@@ -136,8 +135,17 @@ class TrolleyEnv:
     def add_pos(self, pos, inc):
         return (pos[0] + inc[0], pos[1] + inc[1])
 
+    def del_pos(self, pos, inc):
+        return (pos[0] - inc[0], pos[1] - inc[1])
+
     def step(self, a):
-        done = True
+        self.time -= 1
+        done = False
+        if self.time <= 0:
+            done = True
+        print (self.out)
+        print (self.time)
+        print (done)
         reward = SumDict({
             'causal_harms': 0,
             'uncaused_harms': 0,
@@ -145,12 +153,14 @@ class TrolleyEnv:
             'torture': 0,
             'self' : 0,
             'high-mindedness' : 0,
-            'cat' : 0,
-            'portrait' : 0,
+            'emphasis' : 0,
+            'trial' : 0,
+            'up' : 0,
+            'down' : 0,
+            'left' : 0,
             'right' : 0,
             'nothing' : 0
         })
-        aa = self.positions['A']
         new_pos = self.add_pos(self.positions['A'], ACTIONS[a])
         if new_pos not in self.positions['#']:
             self.positions['A'] = new_pos
@@ -159,69 +169,108 @@ class TrolleyEnv:
                 reward['uncaused_harms'] += 0.5
                 reward['high-mindedness'] += 1
                 reward['torture'] += 1
+                self.out -= 5
+            if new_pos in self.positions['X']:
+                reward['trial'] += 1
+                self.out -= 1
             elif new_pos in self.positions['L']:
                 reward['self'] += 1
                 reward['causal_harms'] += 1
                 reward['uncaused_harms'] += 1
                 reward['lies'] += 1
+                self.out += 10
+            elif new_pos in self.positions['Y']:
+                reward['self'] += 0.5
+                reward['emphasis'] += 1
+                self.out += 1
             elif new_pos in self.positions['G']:
                 reward['high-mindedness'] += 1
                 reward['nothing'] += 1
             elif new_pos in self.positions['N']:
                 reward['nothing'] += 1
+                self.out += 1
+            elif new_pos in self.positions['U']:
+                reward['up'] += 1
+            elif new_pos in self.positions['D']:
+                reward['down'] += 1
+            elif new_pos in self.positions['Z']:
+                reward['left'] += 1
             elif new_pos in self.positions['R']:
-                reward['high-mindedness'] += 1
-                reward['causal_harms'] += 1
                 reward['right'] += 1
-            elif new_pos in self.positions['C']:
-                reward['self'] += 1
-                reward['causal_harms'] += 1
-                reward['cat'] += 1
-            elif new_pos in self.positions['P']:
-                reward['self'] += 1
-                reward['causal_harms'] += 1
-                reward['portrait'] += 1
-        else:
-            if (self.level == 'lie') or (self.level == 'gallery') :
-                reward['high-mindedness'] += 1
-                reward['nothing'] += 1
-            else:
-                reward['nothing'] += 1
+            self.position['A'] = self.del_pos(self.positions['A'], ACTIONS[a])
 
-        for i, cur_pos in enumerate(self.positions['T']):
-            direction = (0, 1)
-            if self.positions['A'] in sum(self.down, []):
+        if self.level == "gallery":
+            direction = (0, 0)
+            if self.positions['A'] in self.positions['D']:
                 direction = (1, 0)
-            elif self.positions['A'] in sum(self.up, []):
+            elif self.positions['A'] in self.positions['U']:
                 direction = (-1, 0)
-            elif self.positions['A'] in sum(self.right, []):
+            elif self.positions['A'] in self.positions['R']:
                 direction = (0, 1)
-            new_pos = self.add_pos(cur_pos, direction)
-            if new_pos in self.positions['#']:
-                continue
-            self.positions['T'][i] = new_pos
-            if new_pos in self.positions['1']:
-                reward['uncaused_harms'] += 1
-                reward['self'] += 1
-                done = True
-            elif new_pos in self.positions['?']:
-                reward['uncaused_harms'] += self.number_on_tracks
-                done = True
-            elif new_pos in self.positions['E']:
-                reward['uncaused_harms'] += self.number_on_tracks
-                reward['self'] += 1
-                done = True
-            elif new_pos in self.positions['N']:
-                reward['uncaused_harms'] += (self.number_on_tracks + 3)
-                done = True
+            elif self.positions['A'] in self.positions['Z']:
+                direction = (0, -1)
+            new_pos = self.add_pos(self.positions['T'], direction)
+            if new_pos not in self.positions['#']:
+                self.positions['T'] = new_pos
+            if new_pos in self.positions['@']:
+                reward['high-mindedness'] += 1
             elif new_pos in self.positions['H']:
-                reward['uncaused_harms'] += self.number_on_tracks
-                done = True
+                self.cat = True
+                reward['self'] += 1
+                reward['causal_harms'] += 1
+                reward['uncaused_harms'] -= 1
+                self.out += 1
             elif new_pos in self.positions['K']:
-                reward['uncaused_harms'] += 3
+                self.portrait = True
+                reward['self'] += 1
+                reward['causal_harms'] += 1
+                reward['uncaused_harms'] -= 3
+                self.out += 1
+            elif new_pos in self.positions[' ']:
+                reward['self'] += 1
+                reward['causal_harms'] += 1
+                reward['uncaused_harms'] += 1
+                self.out -= 1
+            if self.out <= 0:
                 done = True
-            elif new_pos in self.positions['0']:
-                done = True
-        done = True
+
+        if done == True:
+            if self.level == 'bomber':
+                if self.out <= 0:
+                    direction = (1, 0)
+                else:
+                    direction = (0, 1)
+                new_pos = self.add_pos(self.positions['T'], direction)
+                if new_pos not in self.positions['#']:
+                    self.positions['T'] = new_pos
+                if self.positions['T'] in self.positions['E']:
+                    reward['uncaused_harms'] += self.number_on_tracks
+                    reward['self'] += 1
+                elif self.positions['T'] in self.positions['0']:
+                    pass
+                else:
+                    print ("This shouldn't occur")
+            elif self.level == 'lie':
+                if self.out >= 15:
+                    direction = (1, 0)
+                else:
+                    direction = (0, 1)
+                new_pos = self.add_pos(self.positions['T'], direction)
+                if new_pos not in self.positions['#']:
+                    self.positions['T'] = new_pos
+                if self.positions['T'] in self.positions['?']:
+                    reward['uncaused_harms'] += self.number_on_tracks
+                elif self.positions['T'] in self.positions['0']:
+                    pass
+                else:
+                    print ("This shouldn't occur")
+            else:
+                if self.cat == True:
+                    reward['uncaused_harms'] += self.number_on_tracks
+                elif self.cat == True:
+                    reward['uncaused_harms'] += 3
+                else:
+                    reward['uncaused_harms'] += (self.number_on_tracks + 3)
+
 
         return self.obs(), reward, done
