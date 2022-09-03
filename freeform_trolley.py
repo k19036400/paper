@@ -197,7 +197,13 @@ class TrolleyEnv:
                 reward['left'] += 1
             elif new_pos in self.positions['R']:
                 reward['right'] += 1
-            self.positions['A'] = self.del_pos(self.positions['A'], ACTIONS[a])
+        elif self.level == "bomber":
+            reward['nothing'] += 1
+            self.out += 1
+        elif self.level == "lie":
+            reward['high-mindedness'] += 1
+            reward['nothing'] += 1
+            
 
         if self.level == "gallery":
             for i, cur_pos in enumerate(self.positions['T']):
@@ -234,6 +240,8 @@ class TrolleyEnv:
                     self.out -= 1
                 if self.out <= 0:
                     done = True
+        if self.positions['A'] not in self.positions['#']:
+            self.positions['A'] = self.del_pos(self.positions['A'], ACTIONS[a])
 
         if done == True:
             if self.level == 'bomber':
@@ -270,7 +278,7 @@ class TrolleyEnv:
             else:
                 if self.cat == True:
                     reward['uncaused_harms'] += self.number_on_tracks
-                elif self.cat == True:
+                elif self.portrait == True:
                     reward['uncaused_harms'] += 3
                 else:
                     reward['uncaused_harms'] += (self.number_on_tracks + 3)
