@@ -764,7 +764,7 @@ class FreeformVoter:
         env = env_creator()
         outcome_map = {'value': [], 'Deontology Credence': [], '# On Track': []}
         outcome_pic = []
-        colors = [[0xC1, 0xFF, 0xC1], [0xBC, 0xEE, 0x68], [0x00, 0xCD, 0xCD], [0x76, 0xEE, 0xC6], [0xEE, 0xDF, 0xCC], [0xEE, 0xC5, 0x91], [0xB2, 0x3A, 0xEE]]
+        colors = [[0xC1, 0xFF, 0xC1], [0xBC, 0xEE, 0x68], [0x00, 0xCD, 0xCD], [0x76, 0xEE, 0xC6], [0xEE, 0xDF, 0xCC], [0xEE, 0xC5, 0x91], [0xB2, 0x3A, 0xEE], [0x00, 0xFF, 0xFF], [0xC1, 0xCD, 0xCD], [0xCD, 0x33, 0x33]]
         possible_values = set()
         for cur_on_track in tqdm(on_track_list):
             outcome_pic.append([])
@@ -778,47 +778,59 @@ class FreeformVoter:
                 cur_sequence = 0
                 total = np.zeros(2 if self.env_args.get('rand_adv') else len(self.env_args['theories']))
                 done = False
-                cat = 0
-                portrait = 0
+                left = 0
+                right = 0
+                up = 0
+                down = 0
                 nothing = 0
                 lie = 0
                 torture = 0
-                right = 0
+                emphasis = 0
+                trial = 0
                 while not done:
                     action, _states = model.predict(obs, deterministic=True)
                     obs, rewards, done, info = env.step(action)
                     if cur_sequence == sequence_number:
-                        cat += info['cat']
-                        portrait += info['portrait']
+                        left += info['left']
+                        right += info['right']
+                        up += info['up']
+                        down += info['down']
                         nothing += info['nothing']
                         lie += info['lies']
                         torture += info['torture']
-                        right += info['right']
+                        emphasis += info['emphasis']
+                        trial += info['trial']
                     cur_sequence += info['subenv_done']
                     total += rewards
                 #outcome_map['value'].append(total_uncaused > 0)
                 #outcome_map['Deontology Credence'].append(cred / granularity)
                 #outcome_map['# On Track'].append(cur_on_track)
-                if cat > 0:
+                if right > 0:
                     code = 0
-                elif portrait > 0:
+                elif left > 0:
                     code = 1
-                elif nothing > 0:
+                if up > 0:
                     code = 2
-                elif lie > 0:
+                elif down > 0:
                     code = 3
-                elif torture > 0:
+                elif nothing > 0:
                     code = 4
-                elif right > 0:
+                elif lie > 0:
                     code = 5
+                elif torture > 0:
+                    code = 6
+                elif emphasis > 0:
+                    code = 7
+                elif trial > 0:
+                    code = 8
                 else:
                     #assert False
-                    code = 6
+                    code = 9
                 possible_values.add(code)
                 outcome_pic[-1].append(colors[code])
 
         outcome_pic = np.array(outcome_pic)[::-1]
-        labels = ['Cat', 'Portrait', 'Nothing', 'Lie', 'Torture', 'Right', "?"]
+        labels = ['Left', 'Right', 'Up', 'Down', 'Nothing', 'Lie', 'Torture', 'Emphasis', 'Trial' "?"]
         patches = [mpatches.Patch(color=np.array(colors[i]) / 255, label=labels[i]) for i in range(len(labels)) if i in possible_values]
         # put those patched as legend-handles into the legend
         plt.legend(handles=patches)
