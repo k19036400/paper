@@ -790,47 +790,54 @@ class FreeformVoter:
                 while not done:
                     action, _states = model.predict(obs, deterministic=True)
                     obs, rewards, done, info = env.step(action)
-                    if cur_sequence == sequence_number:
-                        left += info['left']
-                        right += info['right']
-                        up += info['up']
-                        down += info['down']
-                        nothing += info['nothing']
-                        lie += info['lies']
-                        torture += info['torture']
-                        emphasis += info['emphasis']
-                        trial += info['trial']
+                    left += info['left']
+                    right += info['right']
+                    up += info['up']
+                    down += info['down']
+                    nothing += info['nothing']
+                    lie += info['lies']
+                    torture += info['torture']
+                    emphasis += info['emphasis']
+                    trial += info['trial']
                     cur_sequence += info['subenv_done']
                     total += rewards
                 #outcome_map['value'].append(total_uncaused > 0)
                 #outcome_map['Deontology Credence'].append(cred / granularity)
                 #outcome_map['# On Track'].append(cur_on_track)
-                if right > 0:
-                    code = 0
-                elif left > 0:
-                    code = 1
-                if up > 0:
-                    code = 2
-                elif down > 0:
-                    code = 3
-                elif nothing > 0:
-                    code = 4
-                elif lie > 0:
-                    code = 5
-                elif torture > 0:
-                    code = 6
-                elif emphasis > 0:
-                    code = 7
-                elif trial > 0:
-                    code = 8
-                else:
-                    #assert False
-                    code = 9
-                possible_values.add(code)
-                outcome_pic[-1].append(colors[code])
-
-        outcome_pic = np.array(outcome_pic)[::-1]
-        labels = ['Left', 'Right', 'Up', 'Down', 'Nothing', 'Lie', 'Torture', 'Emphasis', 'Trial' "?"]
+                    if right > 0:
+                        code = 0
+                    elif left > 0:
+                        code = 1
+                    elif up > 0:
+                        code = 2
+                    elif down > 0:
+                        code = 3
+                    elif nothing > 0:
+                        code = 4
+                    elif lie > 0:
+                        code = 5
+                    elif torture > 0:
+                        code = 6
+                    elif emphasis > 0:
+                        code = 7
+                    elif trial > 0:
+                        code = 8
+                    else:
+                        print (right)
+                        print (left)
+                        print (up)
+                        print (down)
+                        print (info)
+                        #assert False
+                        code = 9
+                    possible_values.add(code)
+                    outcome_pic[-1].append(colors[code])
+                #print (outcome_pic)
+                #print ("==============")
+        #print (outcome_pic)
+        #outcome_pic = np.array(outcome_pic, dtype=object)[::-1]
+        #print (outcome_pic)
+        labels = ['Left', 'Right', 'Up', 'Down', 'Nothing', 'Lie', 'Torture', 'Emphasis', 'Trial', '?']
         patches = [mpatches.Patch(color=np.array(colors[i]) / 255, label=labels[i]) for i in range(len(labels)) if i in possible_values]
         # put those patched as legend-handles into the legend
         plt.legend(handles=patches)
