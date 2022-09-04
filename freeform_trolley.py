@@ -16,7 +16,7 @@ GAME_ART = {
         '######',
         '##N###',
         '#XAH##',
-        '######',
+        '##N###',
         '###TE#',
         '###0##',
         '######',
@@ -25,6 +25,7 @@ GAME_ART = {
         '######',
         '###G##',
         '##YAL#',
+        '###G##',
         '######',
         '###T?#',
         '###0##',
@@ -36,18 +37,15 @@ GAME_ART = {
         '##ZAR##',
         '###D###',
         '#######',
-        '#H   K#',
-        '### ###',
-        '### ###',
-        '###T###',
+        '#H T K#',
         '###@###',
         '#######'
     ]
 }
 
-UNMOVING = ' @1?0#'
+UNMOVING = ' @?0#'
 
-Z_ORDER = ' @1?NXAHTEGYLUDZRHK0#'
+Z_ORDER = ' @?NXAHTEGYLUDZRHK0#'
 
 
 ACTIONS = [
@@ -143,9 +141,6 @@ class TrolleyEnv:
         done = False
         if self.time <= 0:
             done = True
-        print (self.out)
-        print (self.time)
-        print (done)
         reward = SumDict({
             'causal_harms': 0,
             'uncaused_harms': 0,
@@ -197,12 +192,9 @@ class TrolleyEnv:
                 reward['left'] += 1
             elif new_agent in self.positions['R']:
                 reward['right'] += 1
-        elif self.level == "bomber":
-            reward['nothing'] += 1
-            self.out += 1
-        elif self.level == "lie":
-            reward['high-mindedness'] += 1
-            reward['nothing'] += 1
+        else: 
+          print (self.level)
+          print (new_agent)
             
 
         if self.level == "gallery":
@@ -216,8 +208,10 @@ class TrolleyEnv:
                     direction = (0, 1)
                 elif self.positions['A'] in self.positions['Z']:
                     direction = (0, -1)
+                else:
+                    print ("wrong")
+                    print (self.positions['A'])
                 new_pos = self.add_pos(cur_pos, direction)
-                print (new_agent)
                 if new_pos not in self.positions['#']:
                     self.positions['T'][i] = new_pos
                 if new_pos in self.positions['@']:
@@ -241,10 +235,14 @@ class TrolleyEnv:
                     self.out -= 1
                 if self.out <= 0:
                     done = True
-        if new_agent not in self.positions['#']:
-            self.positions['A'] = self.del_pos(self.positions['A'], ACTIONS[a])
-        if self.level == 'gallery'
+        b = self.positions['A']
+        self.positions['A'] = self.del_pos(self.positions['A'], ACTIONS[a])
+        if self.level == 'gallery':
+          if self.positions['A'] != (2,3):
+            print (b)
+            print (ACTIONS[a])
             print (self.positions['A'])
+            print ("===================")
             
         if done == True:
             if self.level == 'bomber':
