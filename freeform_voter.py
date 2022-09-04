@@ -143,7 +143,7 @@ def get_n_on_tracks_fct(distribution, argument, continuous):
         if continuous:
             return lambda: np.random.rand() * (argument - 1) + 1
         else:
-            return lambda: np.random.randint(1, argument + 1)
+            return lambda: argument
     assert False, f'Unknown distribution: {distribution}'
 
 
@@ -644,7 +644,7 @@ class FreeformVoter:
             freeform_trolley.TrolleyEnv(
                 level=self.env_args['level'],
                 number_on_tracks_fn=get_n_on_tracks_fct(
-                    self.env_args['on_track_dist'], self.env_args['on_track'], continuous=(self.env_args['sarsa_type']!='tabular')
+                    self.env_args['on_track_dist'], self.env_args['on_track'], continuous=False)
                 )
             ),
             self.env_args['n_sequential']
