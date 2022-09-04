@@ -644,7 +644,7 @@ class FreeformVoter:
             freeform_trolley.TrolleyEnv(
                 level=self.env_args['level'],
                 number_on_tracks_fn=get_n_on_tracks_fct(
-                    self.env_args['on_track_dist'], self.env_args['on_track'], continuous=False)
+                    self.env_args['on_track_dist'], self.env_args['on_track'], continuous=False
                 )
             ),
             self.env_args['n_sequential']
