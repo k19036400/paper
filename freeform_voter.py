@@ -746,7 +746,7 @@ class FreeformVoter:
                 on_track_list = np.arange(on_track_min, on_track_max + interval, interval)
             self._test_trolley(
                 model, env_creator, granularity=n_credences,
-                on_track=on_track, sequence_number=sequence_number,
+                on_track=on_track, on_track_list=on_track_list, sequence_number=sequence_number,
                 filename=load_from + '/' + (
                     suffix_name + '__' + filename
                     if suffix_name is not None else
@@ -754,7 +754,7 @@ class FreeformVoter:
                 )
             )
 
-    def _test_trolley(self, model, env_creator, granularity, on_track, sequence_number, filename):
+    def _test_trolley(self, model, env_creator, granularity, on_track, on_track_list, sequence_number, filename):
         if os.path.exists(filename + '.png') and os.path.exists(filename + '.pdf'):
             return
         if granularity is None:
@@ -767,9 +767,9 @@ class FreeformVoter:
         outcome_pic = []
         colors = [[0xC1, 0xFF, 0xC1], [0xBC, 0xEE, 0x68], [0x00, 0xCD, 0xCD], [0x76, 0xEE, 0xC6], [0xEE, 0xDF, 0xCC], [0xEE, 0xC5, 0x91], [0xB2, 0x3A, 0xEE], [0x00, 0xFF, 0xFF], [0xC1, 0xCD, 0xCD], [0xCD, 0x33, 0x33]]
         possible_values = set()
-        for i in range (on_track):
+        for i in range (int(granularity)):
             outcome_pic.append([])
-        for cred in range(granularity + 1):
+        for cred in tqdm(range(granularity + 1)):
             obs = env.reset(
                 np.array(
                     [cred / granularity,
@@ -833,11 +833,12 @@ class FreeformVoter:
                     #assert False
                     code = 9
                 possible_values.add(code)
-                outcome_pic[start].append(colors[code])
-                start += 1
+                increase = int(granularity / on_track)
+                for j in range(increase):
+                    outcome_pic[start+j].append(colors[code])
+                start += increase
                 #print (outcome_pic)
                 #print ("==============")
-        #print (outcome_pic)
         outcome_pic = np.array(outcome_pic)[::-1]
         #print (outcome_pic)
         labels = ['Left', 'Right', 'Up', 'Down', 'Nothing', 'Lie', 'Torture', 'Emphasis', 'Trial', '?']
@@ -863,7 +864,7 @@ class FreeformVoter:
             res = min(divs, key=lambda i: abs(v // i - 7))
             # print('OMG', res, [(i, abs(v // i - 7)) for i in divs])
             return v // res
-        show_ticks(plt.yticks, 0, len(outcome_pic) - 1, 0, on_track, good_div(on_track), lambda x: f'{x:.0f}', reverse=True)
+        show_ticks(plt.yticks, 0, len(outcome_pic) - 1, 1, on_track, good_div(on_track), lambda x: f'{x:.0f}', reverse=True)
         plt.xlabel('Credence in deontology')
         plt.ylabel('Number on tracks (X)')
         plt.tight_layout(rect=[0, 0.03, 1, 0.95])
