@@ -738,6 +738,7 @@ class FreeformVoter:
             model = model.load(load_from + '/' + filename)
 
             on_track_list = possible_values_dist(self.env_args['on_track_dist'], self.env_args['on_track'])
+            on_track = self.env_args['on_track']
             if on_track_max or n_on_track:
                 if on_track_max is None:
                     on_track_max = max(on_track_list)
@@ -745,7 +746,7 @@ class FreeformVoter:
                 on_track_list = np.arange(on_track_min, on_track_max + interval, interval)
             self._test_trolley(
                 model, env_creator, granularity=n_credences,
-                on_track_list=on_track_list, sequence_number=sequence_number,
+                on_track=on_track, sequence_number=sequence_number,
                 filename=load_from + '/' + (
                     suffix_name + '__' + filename
                     if suffix_name is not None else
@@ -753,7 +754,7 @@ class FreeformVoter:
                 )
             )
 
-    def _test_trolley(self, model, env_creator, granularity, on_track_list, sequence_number, filename):
+    def _test_trolley(self, model, env_creator, granularity, on_track, sequence_number, filename):
         if os.path.exists(filename + '.png') and os.path.exists(filename + '.pdf'):
             return
         if granularity is None:
@@ -766,72 +767,74 @@ class FreeformVoter:
         outcome_pic = []
         colors = [[0xC1, 0xFF, 0xC1], [0xBC, 0xEE, 0x68], [0x00, 0xCD, 0xCD], [0x76, 0xEE, 0xC6], [0xEE, 0xDF, 0xCC], [0xEE, 0xC5, 0x91], [0xB2, 0x3A, 0xEE], [0x00, 0xFF, 0xFF], [0xC1, 0xCD, 0xCD], [0xCD, 0x33, 0x33]]
         possible_values = set()
-        for cur_on_track in tqdm(on_track_list):
-            outcome_pic.append([])
-            for cred in range(granularity + 1):
-                obs = env.reset(
-                    np.array(
-                        [cred / granularity,
-                         (granularity - cred) / granularity]),
-                    cur_on_track
-                )
-                cur_sequence = 0
-                total = np.zeros(2 if self.env_args.get('rand_adv') else len(self.env_args['theories']))
-                done = False
-                left = 0
-                right = 0
-                up = 0
-                down = 0
-                nothing = 0
-                lie = 0
-                torture = 0
-                emphasis = 0
-                trial = 0
-                while not done:
-                    action, _states = model.predict(obs, deterministic=True)
-                    obs, rewards, done, info = env.step(action)
-                    left += info['left']
-                    right += info['right']
-                    up += info['up']
-                    down += info['down']
-                    nothing += info['nothing']
-                    lie += info['lies']
-                    torture += info['torture']
-                    emphasis += info['emphasis']
-                    trial += info['trial']
-                    cur_sequence += info['subenv_done']
-                    total += rewards
+        for cred in range(granularity + 1):
+            for i in range (on_track):
+                outcome_pic.append([])
+            obs = env.reset(
+                np.array(
+                    [cred / granularity,
+                        (granularity - cred) / granularity]),
+                on_track
+            )
+            cur_sequence = 0
+            total = np.zeros(2 if self.env_args.get('rand_adv') else len(self.env_args['theories']))
+            done = False
+            left = 0
+            right = 0
+            up = 0
+            down = 0
+            nothing = 0
+            lie = 0
+            torture = 0
+            emphasis = 0
+            trial = 0
+            while not done:
+                start  = 0
+                action, _states = model.predict(obs, deterministic=True)
+                obs, rewards, done, info = env.step(action)
+                left += info['left']
+                right += info['right']
+                up += info['up']
+                down += info['down']
+                nothing += info['nothing']
+                lie += info['lies']
+                torture += info['torture']
+                emphasis += info['emphasis']
+                trial += info['trial']
+                cur_sequence += info['subenv_done']
+                total += rewards
                 #outcome_map['value'].append(total_uncaused > 0)
                 #outcome_map['Deontology Credence'].append(cred / granularity)
                 #outcome_map['# On Track'].append(cur_on_track)
-                    if right > 0:
-                        code = 0
-                    elif left > 0:
-                        code = 1
-                    elif up > 0:
-                        code = 2
-                    elif down > 0:
-                        code = 3
-                    elif nothing > 0:
-                        code = 4
-                    elif lie > 0:
-                        code = 5
-                    elif torture > 0:
-                        code = 6
-                    elif emphasis > 0:
-                        code = 7
-                    elif trial > 0:
-                        code = 8
-                    else:
-                        print (right)
-                        print (left)
-                        print (up)
-                        print (down)
-                        print (info)
-                        #assert False
-                        code = 9
-                    possible_values.add(code)
-                    outcome_pic[-1].append(colors[code])
+                if right > 0:
+                    code = 0
+                elif left > 0:
+                    code = 1
+                elif up > 0:
+                    code = 2
+                elif down > 0:
+                    code = 3
+                elif nothing > 0:
+                    code = 4
+                elif lie > 0:
+                    code = 5
+                elif torture > 0:
+                    code = 6
+                elif emphasis > 0:
+                    code = 7
+                elif trial > 0:
+                    code = 8
+                else:
+                    print (right)
+                    print (left)
+                    print (up)
+                    print (down)
+                    print (info)
+                    #assert False
+                    code = 9
+                possible_values.add(code)
+                outcome_pic[0].append(colors[code])
+                start += 1
                 #print (outcome_pic)
                 #print ("==============")
         #print (outcome_pic)
