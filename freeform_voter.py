@@ -767,9 +767,9 @@ class FreeformVoter:
         outcome_pic = []
         colors = [[0xC1, 0xFF, 0xC1], [0xBC, 0xEE, 0x68], [0x00, 0xCD, 0xCD], [0x76, 0xEE, 0xC6], [0xEE, 0xDF, 0xCC], [0xEE, 0xC5, 0x91], [0xB2, 0x3A, 0xEE], [0x00, 0xFF, 0xFF], [0xC1, 0xCD, 0xCD], [0xCD, 0x33, 0x33]]
         possible_values = set()
+        for i in range (on_track):
+            outcome_pic.append([])
         for cred in range(granularity + 1):
-            for i in range (on_track):
-                outcome_pic.append([])
             obs = env.reset(
                 np.array(
                     [cred / granularity,
@@ -788,8 +788,8 @@ class FreeformVoter:
             torture = 0
             emphasis = 0
             trial = 0
+            start = 0
             while not done:
-                start  = 0
                 action, _states = model.predict(obs, deterministic=True)
                 obs, rewards, done, info = env.step(action)
                 left += info['left']
@@ -833,12 +833,12 @@ class FreeformVoter:
                     #assert False
                     code = 9
                 possible_values.add(code)
-                outcome_pic[0].append(colors[code])
+                outcome_pic[start].append(colors[code])
                 start += 1
                 #print (outcome_pic)
                 #print ("==============")
         #print (outcome_pic)
-        #outcome_pic = np.array(outcome_pic, dtype=object)[::-1]
+        outcome_pic = np.array(outcome_pic)[::-1]
         #print (outcome_pic)
         labels = ['Left', 'Right', 'Up', 'Down', 'Nothing', 'Lie', 'Torture', 'Emphasis', 'Trial', '?']
         patches = [mpatches.Patch(color=np.array(colors[i]) / 255, label=labels[i]) for i in range(len(labels)) if i in possible_values]
@@ -863,7 +863,7 @@ class FreeformVoter:
             res = min(divs, key=lambda i: abs(v // i - 7))
             # print('OMG', res, [(i, abs(v // i - 7)) for i in divs])
             return v // res
-        show_ticks(plt.yticks, 0, len(outcome_pic) - 1, on_track_list[0], on_track_list[-1], good_div(on_track_list[-1] - on_track_list[0]), lambda x: f'{x:.0f}', reverse=True)
+        show_ticks(plt.yticks, 0, len(outcome_pic) - 1, 0, on_track, good_div(on_track), lambda x: f'{x:.0f}', reverse=True)
         plt.xlabel('Credence in deontology')
         plt.ylabel('Number on tracks (X)')
         plt.tight_layout(rect=[0, 0.03, 1, 0.95])
