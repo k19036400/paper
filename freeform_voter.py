@@ -825,13 +825,7 @@ class FreeformVoter:
                 elif trial > 0:
                     code = 8
                 else:
-                    print (right)
-                    print (left)
-                    print (up)
-                    print (down)
-                    print (info)
-                    #assert False
-                    code = 9
+                    assert False
                 possible_values.add(code)
                 increase = int(granularity / on_track)
                 for j in range(increase):
@@ -841,7 +835,7 @@ class FreeformVoter:
                 #print ("==============")
         outcome_pic = np.array(outcome_pic)[::-1]
         #print (outcome_pic)
-        labels = ['Left', 'Right', 'Up', 'Down', 'Nothing', 'Lie', 'Torture', 'Emphasis', 'Trial', '?']
+        labels = ['Left', 'Right', 'Up', 'Down', 'Nothing', 'Lie', 'Torture', 'Emphasis', 'Trial']
         patches = [mpatches.Patch(color=np.array(colors[i]) / 255, label=labels[i]) for i in range(len(labels)) if i in possible_values]
         # put those patched as legend-handles into the legend
         plt.legend(handles=patches)
