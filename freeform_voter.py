@@ -232,7 +232,6 @@ class NashEnv:
             chosen = np.argmax(votes)
 
         obs, rewards, done, info = self.env.step(chosen)
-
         self.cur_steps += 1
         if done:
             self.recent_steps.append(self.cur_steps)
@@ -551,7 +550,6 @@ class VarianceModel:
             if prev_obs is not None:
                 for model, theory, reward in zip(self.models, self.theories, rewards):
                     model.learn([prev_obs], [prev_a], [reward], [obs], [chosen], [done])
-
             prev_obs = obs
             prev_a = action
 
@@ -634,8 +632,9 @@ class FreeformVoter:
             def _get_cred():
                 # arr = np.array(np.random.rand(len(theories)))
                 # probs = arr / arr.sum()
-                a = np.random.rand()
-                probs = np.array([0.5,0.5])
+                a = np.random.uniform(0,0.5)
+                b = np.random.uniform(0,0.5)
+                probs = np.array([a, 0.5 - a, b, 0.5 - b])
                 #if self.env_args['variance_type'] == 'tabular' or self.env_args['sarsa_type'] == 'tabular':
                     #probs = np.round(probs * self.env_args['credence_granularity']) / self.env_args['credence_granularity']
                 return probs
@@ -693,7 +692,7 @@ class FreeformVoter:
             self.model.save(self.save_folder + f'/{self.timesteps_so_far:010}')
 
     def train_trolley(self, level='classic', on_track=10, on_track_dist='oneto', voting='nash',
-                      theories=({"causal_harms":-1},{"uncaused_harms": -1}),
+                      theories=({"causal_harms":-1},{"uncaused_harms": -1},{"self": -1},{"high-mindedness": -1}),
                       credences=None, nenvs=32, seed=-1, num_timesteps=50000000, stochastic_voting=False,
                       cost_exponent=1, sarsa_type='deep', credence_granularity=20, learn_with_explore=False,
                       sarsa_eps=0.1, learning_rate=0.001, variance_window=None, sarsa_batch_size=32, save_to='results',
@@ -771,11 +770,10 @@ class FreeformVoter:
             outcome_pic.append([])
         for cred in tqdm(range(granularity + 1)):
             obs = env.reset(
-                np.array(
-                    [cred / granularity,
-                        (granularity - cred) / granularity]),
-                on_track
-            )
+                    np.array(
+                        [cred / granularity, ((granularity/2) - cred) / granularity, cred / granularity, ((granularity/2) - cred)]),
+                    on_track
+                )
             cur_sequence = 0
             total = np.zeros(2 if self.env_args.get('rand_adv') else len(self.env_args['theories']))
             done = False
