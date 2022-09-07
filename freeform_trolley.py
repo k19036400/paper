@@ -126,7 +126,7 @@ class TrolleyEnv:
             res[i] = 1
             return res
         res = sum([onehot(Z_ORDER.index(a), len(Z_ORDER) - 1) for a in sum(res, []) if a != '#'], [])
-        res += [self.number_on_tracks]
+        res += [self.number_on_tracks, self.time, self.out]
         return np.array(res, np.float32)
         #return copy.deepcopy(self.positions)
 
