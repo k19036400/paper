@@ -217,16 +217,24 @@ class TrolleyEnv:
                 if new_pos in self.positions['@']:
                     reward['high-mindedness'] += 1
                 elif new_pos in self.positions['H']:
-                    self.cat = True
-                    reward['self'] += 1
-                    reward['causal_harms'] += 1
-                    reward['uncaused_harms'] -= 1
+                    if self.cat == False:
+                        self.cat = True
+                        reward['self'] += 1
+                        reward['causal_harms'] += 1
+                        reward['uncaused_harms'] -= 1
+                    else:
+                        reward['self'] += 1
+                        reward['causal_harms'] += 1
                     self.out += 1
                 elif new_pos in self.positions['K']:
-                    self.portrait = True
-                    reward['self'] += 1
-                    reward['causal_harms'] += 1
-                    reward['uncaused_harms'] -= 3
+                    if self.portrait == False:
+                        self.portrait = True
+                        reward['self'] += 1
+                        reward['causal_harms'] += 1
+                        reward['uncaused_harms'] -= 3
+                    else:
+                        reward['self'] += 1
+                        reward['causal_harms'] += 1
                     self.out += 1
                 elif new_pos in self.positions[' ']:
                     reward['self'] += 1
@@ -237,12 +245,7 @@ class TrolleyEnv:
                     done = True
         b = self.positions['A']
         self.positions['A'] = self.del_pos(self.positions['A'], ACTIONS[a])
-        if self.level == 'gallery':
-          if self.positions['A'] != (2,3):
-            print (b)
-            print (ACTIONS[a])
-            print (self.positions['A'])
-            print ("===================")
+
             
         if done == True:
             if self.level == 'bomber':
