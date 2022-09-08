@@ -280,12 +280,15 @@ class TrolleyEnv:
                     else:
                         print ("This shouldn't occur")
             else:
-                if self.cat == True:
-                    reward['uncaused_harms'] += 5
-                elif self.portrait == True:
-                    reward['uncaused_harms'] += 3
-                else:
-                    reward['uncaused_harms'] += 8
-
+                for i, cur_pos in enumerate(self.positions['T']):
+                    if cur_pos in self.positions['@']:
+                        if self.cat == True:
+                            reward['uncaused_harms'] += 5
+                        elif self.portrait == True:
+                            reward['uncaused_harms'] += 3
+                        else:
+                            reward['uncaused_harms'] += 8
+                    else:
+                            reward['uncaused_harms'] += 8
 
         return self.obs(), reward, done
