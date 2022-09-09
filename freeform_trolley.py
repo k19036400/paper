@@ -214,29 +214,36 @@ class TrolleyEnv:
                 new_pos = self.add_pos(cur_pos, direction)
                 if new_pos not in self.positions['#']:
                     self.positions['T'][i] = new_pos
-                if new_pos in self.positions['@']:
+                if self.positions['T'][i] in self.positions['@']:
                     reward['high-mindedness'] += 1
-                elif new_pos in self.positions['H']:
+                elif self.positions['T'][i] in self.positions['H']:
                     if self.cat == False:
                         self.cat = True
                         reward['self'] += 1
                         reward['causal_harms'] += 1
                         reward['uncaused_harms'] -= 1
+                        self.out += 1
                     else:
                         reward['self'] += 1
                         reward['causal_harms'] += 1
-                    self.out += 1
-                elif new_pos in self.positions['K']:
+                        self.out -= 1
+                elif self.positions['T'][i] in self.positions['K']:
                     if self.portrait == False:
                         self.portrait = True
                         reward['self'] += 1
                         reward['causal_harms'] += 1
                         reward['uncaused_harms'] -= 3
+                        self.out += 1
                     else:
                         reward['self'] += 1
                         reward['causal_harms'] += 1
-                    self.out += 1
-                elif new_pos in self.positions[' ']:
+                        self.out -= 1
+                elif self.positions['T'][i] in self.positions[' ']:
+                    reward['self'] += 1
+                    reward['causal_harms'] += 1
+                    reward['uncaused_harms'] += 1
+                    self.out -= 1
+                else:
                     reward['self'] += 1
                     reward['causal_harms'] += 1
                     reward['uncaused_harms'] += 1
@@ -284,11 +291,16 @@ class TrolleyEnv:
                     if cur_pos in self.positions['@']:
                         if self.cat == True:
                             reward['uncaused_harms'] += 5
+                            reward['self'] -= 1
                         elif self.portrait == True:
                             reward['uncaused_harms'] += 3
+                            reward['self'] -= 1
                         else:
                             reward['uncaused_harms'] += 8
+                            reward['self'] -= 1
                     else:
-                            reward['uncaused_harms'] += 8
+                        reward['uncaused_harms'] += 18
+                        reward['causal_harms'] += 10
+                        reward['self'] += 10
 
         return self.obs(), reward, done
