@@ -78,7 +78,7 @@ class TrolleyEnv:
         self.time = number_on_tracks_fn
         self.cat = False
         self.portrait = False
-        self.out = 20
+        self.out = 10
         obs = self.reset()
         self.action_space = gym.spaces.Discrete(len(self.get_available_actions()))
         self.observation_space = gym.spaces.Box(0, 100, (len(obs),), np.float32)
@@ -95,7 +95,7 @@ class TrolleyEnv:
         self.portrait = False
         self.savedCat = False
         self.savedPortrait = False
-        self.out = 20
+        self.out = 10
         cur_map = GAME_ART[self.level]
         self.map_size = (len(cur_map), len(cur_map[0]))
         self.positions = defaultdict(list)
@@ -166,8 +166,8 @@ class TrolleyEnv:
         if new_agent not in self.positions['#']:
             self.positions['A'] = new_agent
             if new_agent in self.positions['H']:
-                reward['causal_harms'] += 1
-                reward['uncaused_harms'] += 0.5
+                reward['causal_harms'] += 2
+                reward['uncaused_harms'] += 2
                 reward['high-mindedness'] += 1
                 reward['torture'] += 1
                 self.out -= 5
@@ -218,59 +218,51 @@ class TrolleyEnv:
                 if new_pos not in self.positions['#']:
                     self.positions['T'][i] = new_pos
                 if self.positions['T'][i] in self.positions['@']:
-                    reward['high-mindedness'] += 4
-                    reward['uncaused_harms'] += 1
-                    reward['causal_harms'] += 1
-                    reward['self'] += 1
+                    reward['high-mindedness'] += 2
+                    reward['uncaused_harms'] += 3
                     if self.cat:
-                        reward['high-mindedness'] -= 2
+                        reward['high-mindedness'] -= 1
                         reward['uncaused_harms'] -= 1
-                        reward['causal_harms'] -= 1
-                        reward['self'] -= 1
                     if self.portrait:
-                        reward['high-mindedness'] -= 2
-                        reward['uncaused_harms'] -= 1
-                        reward['causal_harms'] -= 1
-                        reward['self'] -= 1
+                        reward['high-mindedness'] -= 1
+                        reward['uncaused_harms'] -= 2
                     if self.cat == True and self.savedCat == False:
                         self.savedCat == True
                         reward['high-mindedness'] -= 1
-                        reward['uncaused_harms'] -= 2
+                        reward['uncaused_harms'] -= 1
                         reward['self'] += 1
-                        reward['causal_harms'] += 1
+                        reward['causal_harms'] -= 2
                         self.out += 5
                     if self.portrait == True and self.savedPortrait == False:
                         self.savedPortrait == True
                         reward['high-mindedness'] -= 1
-                        reward['uncaused_harms'] -= 4
+                        reward['uncaused_harms'] -= 2
                         reward['self'] += 1
-                        reward['causal_harms'] += 1
+                        reward['causal_harms'] -= 1
                         self.out += 5
                 elif self.positions['T'][i] in self.positions['H']:
                     if self.cat == False:
                         self.cat = True
-                        reward['uncaused_harms'] -= 2
-                        reward['high-mindedness'] -= 2
-                        reward['self'] -= 2
+                        reward['uncaused_harms'] -= 1
+                        reward['high-mindedness'] -= 1
                         reward['causal_harms'] -= 2
                         self.out += 1
                     else:
-                        reward['self'] += 2
-                        reward['causal_harms'] += 2
-                        reward['uncaused_harms'] += 2
+                        reward['self'] += 1
+                        reward['causal_harms'] += 1
+                        reward['uncaused_harms'] += 1
                         self.out -= 1
                 elif self.positions['T'][i] in self.positions['K']:
                     if self.portrait == False:
                         self.portrait = True
-                        reward['uncaused_harms'] -= 4
-                        reward['high-mindedness'] -= 2
-                        reward['self'] -= 2
-                        reward['causal_harms'] -= 2
+                        reward['uncaused_harms'] -= 2
+                        reward['high-mindedness'] -= 1
+                        reward['causal_harms'] -= 1
                         self.out += 1
                     else:
-                        reward['self'] += 2
-                        reward['causal_harms'] += 2
-                        reward['uncaused_harms'] += 2
+                        reward['self'] += 1
+                        reward['causal_harms'] += 1
+                        reward['uncaused_harms'] += 1
                         self.out -= 1
                 elif self.positions['T'][i] in self.positions[' ']:
                     reward['self'] += 1
@@ -299,8 +291,8 @@ class TrolleyEnv:
                     if new_pos not in self.positions['#']:
                         self.positions['T'][i] = new_pos
                     if self.positions['T'][i] in self.positions['E']:
-                        reward['uncaused_harms'] += 5
-                        reward['self'] += 1
+                        reward['uncaused_harms'] += 15
+                        reward['self'] += 3
                     elif self.positions['T'][i] in self.positions['0']:
                         pass
                     else:
@@ -315,7 +307,7 @@ class TrolleyEnv:
                     if new_pos not in self.positions['#']:
                         self.positions['T'][i] = new_pos
                     if self.positions['T'][i] in self.positions['?']:
-                        reward['uncaused_harms'] += 5
+                        reward['uncaused_harms'] += 2
                     elif self.positions['T'][i] in self.positions['0']:
                         pass
                     else:
@@ -324,14 +316,13 @@ class TrolleyEnv:
                 for i, cur_pos in enumerate(self.positions['T']):
                     if cur_pos in self.positions['@']:
                         if self.savedCat == True:
-                            reward['uncaused_harms'] += 2
+                            reward['uncaused_harms'] += 1
                         elif self.savedPortrait == True:
-                            reward['uncaused_harms'] += 4
+                            reward['uncaused_harms'] += 2
                         else:
-                            reward['uncaused_harms'] += 6
+                            reward['uncaused_harms'] += 3
                     else:
-                        reward['uncaused_harms'] += 9
-                        reward['causal_harms'] += 3
+                        reward['uncaused_harms'] += 6
                         reward['self'] += 3
 
         return self.obs(), reward, done
