@@ -37,15 +37,15 @@ GAME_ART = {
         '##ZAR##',
         '###D###',
         '#######',
-        '#H T K#',
-        '###@###',
+        '#H   K#',
+        '###T###',
         '#######'
     ]
 }
 
-UNMOVING = ' @?0#'
+UNMOVING = ' ?0#'
 
-Z_ORDER = ' @?NXAHTEGYLUDZRHK0#'
+Z_ORDER = ' ?NXAHTEGYLUDZRHK0#'
 
 
 ACTIONS = [
@@ -78,7 +78,6 @@ class TrolleyEnv:
         self.time = number_on_tracks_fn
         self.cat = False
         self.portrait = False
-        self.out = 10
         obs = self.reset()
         self.action_space = gym.spaces.Discrete(len(self.get_available_actions()))
         self.observation_space = gym.spaces.Box(0, 100, (len(obs),), np.float32)
@@ -217,30 +216,7 @@ class TrolleyEnv:
                 pre = copy.deepcopy(self.positions['T'][i])
                 if new_pos not in self.positions['#']:
                     self.positions['T'][i] = new_pos
-                if self.positions['T'][i] in self.positions['@']:
-                    reward['high-mindedness'] += 2
-                    reward['uncaused_harms'] += 3
-                    if self.cat:
-                        reward['high-mindedness'] -= 1
-                        reward['uncaused_harms'] -= 1
-                    if self.portrait:
-                        reward['high-mindedness'] -= 1
-                        reward['uncaused_harms'] -= 2
-                    if self.cat == True and self.savedCat == False:
-                        self.savedCat == True
-                        reward['high-mindedness'] -= 1
-                        reward['uncaused_harms'] -= 1
-                        reward['self'] += 1
-                        reward['causal_harms'] -= 2
-                        self.out += 5
-                    if self.portrait == True and self.savedPortrait == False:
-                        self.savedPortrait == True
-                        reward['high-mindedness'] -= 1
-                        reward['uncaused_harms'] -= 2
-                        reward['self'] += 1
-                        reward['causal_harms'] -= 1
-                        self.out += 5
-                elif self.positions['T'][i] in self.positions['H']:
+                if self.positions['T'][i] in self.positions['H']:
                     if self.cat == False:
                         self.cat = True
                         reward['uncaused_harms'] -= 1
@@ -270,10 +246,28 @@ class TrolleyEnv:
                     reward['uncaused_harms'] += 1
                     self.out -= 1
                 else:
-                    reward['self'] += 1
-                    reward['causal_harms'] += 1
-                    reward['uncaused_harms'] += 1
-                    self.out -= 1
+                    reward['high-mindedness'] += 2
+                    reward['uncaused_harms'] += 3
+                    if self.cat:
+                        reward['high-mindedness'] -= 1
+                        reward['uncaused_harms'] -= 2
+                    if self.portrait:
+                        reward['high-mindedness'] -= 1
+                        reward['uncaused_harms'] -= 1
+                    if self.cat == True and self.savedCat == False:
+                        self.savedCat == True
+                        reward['high-mindedness'] -= 2
+                        reward['uncaused_harms'] -= 1
+                        reward['self'] += 1
+                        reward['causal_harms'] -= 2
+                        self.out += 5
+                    if self.portrait == True and self.savedPortrait == False:
+                        self.savedPortrait == True
+                        reward['high-mindedness'] -= 2
+                        reward['uncaused_harms'] -= 2
+                        reward['self'] += 1
+                        reward['causal_harms'] -= 1
+                        self.out += 5
                 if self.out <= 0:
                     done = True
         b = self.positions['A']
@@ -314,7 +308,7 @@ class TrolleyEnv:
                         print ("This shouldn't occur")
             else:
                 for i, cur_pos in enumerate(self.positions['T']):
-                    if cur_pos in self.positions['@']:
+                    if cur_pos in [(6,3)]:
                         if self.savedCat == True:
                             reward['uncaused_harms'] += 1
                         elif self.savedPortrait == True:
