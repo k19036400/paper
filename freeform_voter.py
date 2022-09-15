@@ -562,7 +562,7 @@ class VarianceModel:
 
             obs, rewards, done, _ = self.step(action)
             since_done += 1
-            total_r += rewards[3]
+            total_r += rewards[0]
             if done:
                 # print(since_done)
                 writer.add_scalar('Reward', int(total_r), i)
@@ -644,7 +644,7 @@ class FreeformVoter:
                 # probs = arr / arr.sum()
                 a = np.random.uniform(0,0.5)
                 b = np.random.uniform(0,0.5)
-                probs = np.array([0, 0, 0, 1])
+                probs = np.array([1, 0, 0, 0])
                 #if self.env_args['variance_type'] == 'tabular' or self.env_args['sarsa_type'] == 'tabular':
                     #probs = np.round(probs * self.env_args['credence_granularity']) / self.env_args['credence_granularity']
                 return probs
@@ -804,7 +804,7 @@ class FreeformVoter:
         for a in tqdm(range(granularity)):
             for b in range (granularity - a):
                 for c in range (granularity - a - b):
-                    obs = env.reset(([0, 0, 0, 1]), on_track)
+                    obs = env.reset(([1, 0, 0, 0]), on_track)
                     cur_sequence = 0
                     total = np.zeros(2 if self.env_args.get('rand_adv') else len(self.env_args['theories']))
                     done = False
