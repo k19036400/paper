@@ -11,7 +11,7 @@ import os
 import sys
 sys.path.append(os.path.dirname(os.path.realpath(__file__)) + '/stable-baselines/')
 import glob
-
+from tensorboardX import SummaryWriter
 from stable_baselines.common.policies import MlpPolicy
 from stable_baselines.common.vec_env import DummyVecEnv
 from stable_baselines import PPO2
@@ -530,7 +530,7 @@ class VarianceModel:
         prev_obs = None
         prev_a = None
         done = False
-
+        writer = SummaryWriter('temp/')
         since_done = 0
 
         for i in tqdm(range(total_timesteps)):
@@ -557,6 +557,7 @@ class VarianceModel:
             since_done += 1
             if done:
                 # print(since_done)
+                writer.add_scalar('Reward', int(sum(rewards)), i)
                 since_done = 0
                 obs = self.reset()
             self.num_timesteps += 1
@@ -634,7 +635,7 @@ class FreeformVoter:
                 # probs = arr / arr.sum()
                 a = np.random.uniform(0,0.5)
                 b = np.random.uniform(0,0.5)
-                probs = np.array([a, 0.5 - a, b, 0.5 - b])
+                probs = np.array([0, 0, 1, 0])
                 #if self.env_args['variance_type'] == 'tabular' or self.env_args['sarsa_type'] == 'tabular':
                     #probs = np.round(probs * self.env_args['credence_granularity']) / self.env_args['credence_granularity']
                 return probs
@@ -794,16 +795,14 @@ class FreeformVoter:
         for a in tqdm(range(granularity)):
             for b in range (granularity - a):
                 for c in range (granularity - a - b):
-                    obs = env.reset(np.array([a / granularity, b / granularity, c / granularity, (granularity -a  - b - c) / granularity]), on_track)
+                    obs = env.reset(([0, 0, 1, 0]), on_track)
                     cur_sequence = 0
                     total = np.zeros(2 if self.env_args.get('rand_adv') else len(self.env_args['theories']))
                     done = False
                     start = 0
                     alpha = 0
-                    ac = []
                     while not done:
                         action, _states = model.predict(obs, deterministic=True)
-                        ac += [action]
                         obs, rewards, done, info = env.step(action)
                         cur_sequence += info['subenv_done']
                         total += rewards
@@ -830,11 +829,6 @@ class FreeformVoter:
                             code = 8
                         else:
                             assert False
-                        if action != code:
-                            print (code)
-                            print (action)
-                            print(info)
-                            print("==========")
                         possible_values.add(code)
                         increase = int(len(r) / on_track)
                         test[alpha].append(code)
@@ -842,9 +836,6 @@ class FreeformVoter:
                             outcome_pic[start+j].append(colors[code])
                         start += increase
                         alpha += 1
-                        #print (outcome_pic)
-                        #print ("==============")
-                    #print (ac)
         #outcome_pic = np.array(self.combine(outcome_pic))[::-1]
         outcome_pic = np.array(outcome_pic)[::-1]
         #print (outcome_pic)
