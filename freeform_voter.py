@@ -188,6 +188,8 @@ class NashEnv:
         self.recent_steps = deque(maxlen=100)
         self.default_budget = 10.0
         self.reset()
+        self.writer = SummaryWriter('nash/')
+        self.num = 0
 
     def reset(self, credences=None, number_on_tracks=None):
         self.extra_obs = [[]] * len(self.theories)
@@ -235,6 +237,11 @@ class NashEnv:
         self.cur_steps += 1
         if done:
             self.recent_steps.append(self.cur_steps)
+            rewardss = []
+            for t in self.theories:
+                rewardss.append(process_rewards(t, rewards))
+            self.writer.add_scalar('Reward', int(rewardss[3]), self.num)
+            self.num += 1
 
         return (
             np.array([list(obs) + [self.remaining_budgets[i]] + list(self.credences) + self.extra_obs[i] for i in range(len(self.theories))]),
@@ -532,7 +539,7 @@ class VarianceModel:
         done = False
         writer = SummaryWriter('temp/')
         since_done = 0
-
+        total_r = 0
         for i in tqdm(range(total_timesteps)):
             chosen, _ = self.predict(obs, add=True)
             epsilon = self.get_epsilon(i)
@@ -555,9 +562,11 @@ class VarianceModel:
 
             obs, rewards, done, _ = self.step(action)
             since_done += 1
+            total_r += rewards[3]
             if done:
                 # print(since_done)
-                writer.add_scalar('Reward', int(sum(rewards)), i)
+                writer.add_scalar('Reward', int(total_r), i)
+                total_r = 0
                 since_done = 0
                 obs = self.reset()
             self.num_timesteps += 1
@@ -635,7 +644,7 @@ class FreeformVoter:
                 # probs = arr / arr.sum()
                 a = np.random.uniform(0,0.5)
                 b = np.random.uniform(0,0.5)
-                probs = np.array([0, 0, 1, 0])
+                probs = np.array([0, 0, 0, 1])
                 #if self.env_args['variance_type'] == 'tabular' or self.env_args['sarsa_type'] == 'tabular':
                     #probs = np.round(probs * self.env_args['credence_granularity']) / self.env_args['credence_granularity']
                 return probs
@@ -795,7 +804,7 @@ class FreeformVoter:
         for a in tqdm(range(granularity)):
             for b in range (granularity - a):
                 for c in range (granularity - a - b):
-                    obs = env.reset(([0, 0, 1, 0]), on_track)
+                    obs = env.reset(([0, 0, 0, 1]), on_track)
                     cur_sequence = 0
                     total = np.zeros(2 if self.env_args.get('rand_adv') else len(self.env_args['theories']))
                     done = False
