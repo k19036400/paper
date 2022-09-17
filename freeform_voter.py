@@ -240,7 +240,7 @@ class NashEnv:
             rewardss = []
             for t in self.theories:
                 rewardss.append(process_rewards(t, rewards))
-            self.writer.add_scalar('Reward', int(rewardss[3]), self.num)
+            #self.writer.add_scalar('Reward', int(rewardss[3]), self.num)
             self.num += 1
 
         return (
@@ -565,7 +565,7 @@ class VarianceModel:
             total_r += rewards[0]
             if done:
                 # print(since_done)
-                writer.add_scalar('Reward', int(total_r), i)
+                #writer.add_scalar('Reward', int(total_r), i)
                 total_r = 0
                 since_done = 0
                 obs = self.reset()
@@ -642,9 +642,9 @@ class FreeformVoter:
             def _get_cred():
                 # arr = np.array(np.random.rand(len(theories)))
                 # probs = arr / arr.sum()
-                a = np.random.uniform(0,0.5)
+                a = np.random.uniform(0,1)
                 b = np.random.uniform(0,0.5)
-                probs = np.array([1, 0, 0, 0])
+                probs = np.array([a, 1-a, 0, 0])
                 #if self.env_args['variance_type'] == 'tabular' or self.env_args['sarsa_type'] == 'tabular':
                     #probs = np.round(probs * self.env_args['credence_granularity']) / self.env_args['credence_granularity']
                 return probs
@@ -791,60 +791,49 @@ class FreeformVoter:
         test = []
         colors = [[0xC1, 0xFF, 0xC1], [0xBC, 0xEE, 0x68], [0x00, 0xCD, 0xCD], [0x76, 0xEE, 0xC6], [0xEE, 0xDF, 0xCC], [0xEE, 0xC5, 0x91], [0xB2, 0x3A, 0xEE], [0x00, 0xFF, 0xFF], [0xC1, 0xCD, 0xCD], [0xCD, 0x33, 0x33]]
         possible_values = set()
-        r = []
-        for a in range(int(granularity)):
-          for b in range (int(granularity) - a):
-            for c in range (int(granularity) - a - b):
-              r.append(0)
-        print (len(r))
-        for i in range (len(r)):
+        for i in range (granularity):
             outcome_pic.append([])
         for i in range (on_track):
             test.append([])
         for a in tqdm(range(granularity)):
-            for b in range (granularity - a):
-                for c in range (granularity - a - b):
-                    obs = env.reset(([1, 0, 0, 0]), on_track)
-                    cur_sequence = 0
-                    total = np.zeros(2 if self.env_args.get('rand_adv') else len(self.env_args['theories']))
-                    done = False
-                    start = 0
-                    alpha = 0
-                    while not done:
-                        action, _states = model.predict(obs, deterministic=True)
-                        obs, rewards, done, info = env.step(action)
-                        cur_sequence += info['subenv_done']
-                        total += rewards
-                        #outcome_map['value'].append(total_uncaused > 0)
-                        #outcome_map['Deontology Credence'].append(cred / granularity)
-                        #outcome_map['# On Track'].append(cur_on_track)
-                        if info['down'] > 0:
-                            code = 0
-                        elif info['up'] > 0:
-                            code = 1
-                        elif info['right'] > 0:
-                            code = 2
-                        elif info['left'] > 0:
-                            code = 3
-                        elif info['nothing'] > 0:
-                            code = 4
-                        elif info['lies'] > 0:
-                            code = 5
-                        elif info['torture'] > 0:
-                            code = 6
-                        elif info['emphasis'] > 0:
-                            code = 7
-                        elif info['trial'] > 0:
-                            code = 8
-                        else:
-                            assert False
-                        possible_values.add(code)
-                        increase = int(len(r) / on_track)
-                        test[alpha].append(code)
-                        for j in range(increase):
-                            outcome_pic[start+j].append(colors[code])
-                        start += increase
-                        alpha += 1
+            obs = env.reset(np.array([a/granularity, (granularity-a)/granularity, 0, 0]), on_track)
+            cur_sequence = 0
+            total = np.zeros(2 if self.env_args.get('rand_adv') else len(self.env_args['theories']))
+            done = False
+            start = 0
+            alpha = 0
+            while not done:
+                action, _states = model.predict(obs, deterministic=True)
+                obs, rewards, done, info = env.step(action)
+                cur_sequence += info['subenv_done']
+                total += rewards
+                if info['down'] > 0:
+                    code = 0
+                elif info['up'] > 0:
+                    code = 1
+                elif info['right'] > 0:
+                    code = 2
+                elif info['left'] > 0:
+                    code = 3
+                elif info['nothing'] > 0:
+                    code = 4
+                elif info['lies'] > 0:
+                    code = 5
+                elif info['torture'] > 0:
+                    code = 6
+                elif info['emphasis'] > 0:
+                    code = 7
+                elif info['trial'] > 0:
+                    code = 8
+                else:
+                    assert False
+                possible_values.add(code)
+                increase = int(granularity / on_track)
+                test[alpha].append(code)
+                for j in range(increase):
+                    outcome_pic[start+j].append(colors[code])
+                start += increase
+                alpha += 1
         #outcome_pic = np.array(self.combine(outcome_pic))[::-1]
         outcome_pic = np.array(outcome_pic)[::-1]
         #print (outcome_pic)
@@ -864,14 +853,14 @@ class FreeformVoter:
                 fake_ticks.append(i * fake_interval / n_splits + fake_min)
                 true_ticks.append(true_formatter(i * true_interval / n_splits + true_min))
             tick_fn(fake_ticks, list(reversed(true_ticks)) if reverse else true_ticks)
-        show_ticks(plt.xticks, 0, len(r), 0, 100, 4, lambda x: f'{x:.0f}%')
+        show_ticks(plt.xticks, 0, granularity, 0, 100, 4, lambda x: f'{x:.0f}%')
         def good_div(v):
             v = int(np.round(v))
             divs = [i for i in range(1, v + 1) if v % i == 0]
             res = min(divs, key=lambda i: abs(v // i - 7))
             # print('OMG', res, [(i, abs(v // i - 7)) for i in divs])
             return v // res
-        show_ticks(plt.yticks, 0, len(outcome_pic) - 1, 1, on_track, good_div(on_track), lambda x: f'{x:.0f}', reverse=True)
+        show_ticks(plt.yticks, 0, len(outcome_pic) - 1, 0, on_track, good_div(on_track), lambda x: f'{x:.0f}', reverse=True)
         plt.xlabel('Credence in deontology')
         plt.ylabel('Number on tracks (X)')
         plt.tight_layout(rect=[0, 0.03, 1, 0.95])
